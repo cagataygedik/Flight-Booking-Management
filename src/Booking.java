@@ -14,6 +14,6 @@ class Booking {
     }
 
     public Flight getFlight() {
-        return ((ConcreteBooking) bookingComponent).getFlight();
+        return bookingComponent.getFlight();
     }
 }

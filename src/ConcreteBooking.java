@@ -11,15 +11,25 @@ class ConcreteBooking implements BookingComponent {
 
     @Override
     public double getCost() {
-        return 200.0; // Base cost
+        return flight.getPrice();
     }
 
     @Override
     public String getDescription() {
-        return "Flight " + flight.getFlightNumber() + " booking for " + passengerName + " (Seat: " + seat + ")";
+        return String.format("Flight %s (%s -> %s) booking for %s (Seat: %s)",
+                             flight.getFlightNumber(), flight.getDeparture(), flight.getArrival(),
+                             passengerName, seat);
     }
 
+    @Override
     public Flight getFlight() {
         return flight;
     }
 }
+
+    // Add getFlight() to the interface and implement here
+    // (As per previous recommendation for Liskov Substitution)
+    // @Override
+    // public Flight getFlight() {
+    //     return flight;
+    // }

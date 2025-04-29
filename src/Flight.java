@@ -1,17 +1,32 @@
 import java.util.ArrayList;
 import java.util.List;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 
 class Flight implements Observable {
     private String flightNumber;
     private String departure;
     private String arrival;
+    private String airline;
+    private LocalDate departureDate;
+    private LocalTime departureTime;
+    private double duration;
+    private double price;
     private String status;
     private List<Observer> observers = new ArrayList<>();
 
-    public Flight(String flightNumber, String departure, String arrival) {
+
+    public Flight(String flightNumber, String departure, String arrival, String airline,
+                  LocalDate departureDate, LocalTime departureTime, double duration, double price) {
         this.flightNumber = flightNumber;
         this.departure = departure;
         this.arrival = arrival;
+        this.airline = airline;
+        this.departureDate = departureDate;
+        this.departureTime = departureTime;
+        this.duration = duration;
+        this.price = price;
         this.status = "On Time";
     }
 
@@ -32,25 +47,29 @@ class Flight implements Observable {
 
     @Override
     public void notifyObservers() {
+        String message = String.format("Flight %s (%s to %s on %s) status updated to: %s",
+                                       flightNumber, departure, arrival, departureDate, status);
         for (Observer o : observers) {
-            o.update("Flight " + flightNumber + " status updated to: " + status);
+            o.update(message);
         }
     }
 
-    public String getFlightNumber() {
-        return flightNumber;
-    }
+    public String getFlightNumber() { return flightNumber; }
+    public String getDeparture() { return departure; }
+    public String getArrival() { return arrival; }
+    public String getAirline() { return airline; }
+    public LocalDate getDepartureDate() { return departureDate; }
+    public LocalTime getDepartureTime() { return departureTime; }
+    public double getDuration() { return duration; }
+    public double getPrice() { return price; }
+    public String getStatus() { return status; }
 
-    public String getDeparture() {
-        return departure;
-    }
-
-    public String getArrival() {
-        return arrival;
-    }
 
     @Override
     public String toString() {
-        return "Flight " + flightNumber + " from " + departure + " to " + arrival + " - Status: " + status;
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+        return String.format("Flight %s (%s) %s -> %s on %s at %s (%s hrs) - Status: %s - Price: $%.2f",
+                             flightNumber, airline, departure, arrival, departureDate,
+                             departureTime.format(timeFormatter), duration, status, price);
     }
 }

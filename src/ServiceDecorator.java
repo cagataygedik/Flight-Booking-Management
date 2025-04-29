@@ -4,4 +4,10 @@ abstract class ServiceDecorator implements BookingComponent {
     public ServiceDecorator(BookingComponent booking) {
         this.booking = booking;
     }
+
+    @Override
+    public Flight getFlight() {
+        return booking.getFlight();
+    }
+
 }

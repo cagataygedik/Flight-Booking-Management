@@ -64,7 +64,7 @@ public class Main {
         while (true) {
             try {
                 int choice = scanner.nextInt();
-                scanner.nextLine(); // Consume newline
+                scanner.nextLine();
                 if (choice >= 1 && choice <= 8) {
                     return choice;
                 } else {
@@ -72,7 +72,7 @@ public class Main {
                 }
             } catch (InputMismatchException e) {
                 System.out.println(ConsoleColors.RED + "Invalid input. Please enter a number." + ConsoleColors.RESET);
-                scanner.nextLine(); // Consume invalid input
+                scanner.nextLine();
             }
         }
     }
@@ -122,7 +122,7 @@ public class Main {
         }
         System.out.print("Enter booking number: ");
         int bookingIndex = scanner.nextInt() - 1;
-        scanner.nextLine(); // Consume newline
+        scanner.nextLine();
         if (bookingIndex < 0 || bookingIndex >= currentPassenger.getBookings().size()) {
             System.out.println(ConsoleColors.RED + "Invalid booking number." + ConsoleColors.RESET);
             return;
@@ -137,7 +137,7 @@ public class Main {
             System.out.println("4. Done");
             System.out.print("Choose a service to add (or 4 to finish): ");
             int choice = scanner.nextInt();
-            scanner.nextLine(); // Consume newline
+            scanner.nextLine();
             if (choice == 4) break;
             switch (choice) {
                 case 1:
@@ -179,7 +179,7 @@ public class Main {
         }
         System.out.print("Enter booking number: ");
         int bookingIndex = scanner.nextInt() - 1;
-        scanner.nextLine(); // Consume newline
+        scanner.nextLine();
         if (bookingIndex < 0 || bookingIndex >= currentPassenger.getBookings().size()) {
             System.out.println(ConsoleColors.RED + "Invalid booking number." + ConsoleColors.RESET);
             return;
