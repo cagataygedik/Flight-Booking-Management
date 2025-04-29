@@ -13,6 +13,8 @@ class Flight implements Observable {
     private LocalTime departureTime;
     private double duration;
     private double price;
+    private double originalPrice;
+    private int discountPercentage;
     private String status;
     private List<Observer> observers = new ArrayList<>();
 
@@ -27,7 +29,26 @@ class Flight implements Observable {
         this.departureTime = departureTime;
         this.duration = duration;
         this.price = price;
+        this.originalPrice = price;
+        this.discountPercentage = 0;
         this.status = "On Time";
+    }
+
+    public void setSpecialOffer(int discountPercentage, double newPrice) {
+        this.discountPercentage = discountPercentage;
+        this.price = newPrice;
+        
+        // Notify observers about the special offer
+        String message = String.format("Special offer for Flight %s: %d%% discount! New price: $%.2f", 
+                                      flightNumber, discountPercentage, newPrice);
+        for (Observer o : observers) {
+            o.update(message);
+        }
+    }
+    
+    public void removeSpecialOffer() {
+        this.price = this.originalPrice;
+        this.discountPercentage = 0;
     }
 
     public void setStatus(String status) {
@@ -62,14 +83,21 @@ class Flight implements Observable {
     public LocalTime getDepartureTime() { return departureTime; }
     public double getDuration() { return duration; }
     public double getPrice() { return price; }
+    public double getOriginalPrice() { return originalPrice; }
+    public int getDiscountPercentage() { return discountPercentage; }
     public String getStatus() { return status; }
 
 
     @Override
     public String toString() {
         DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
-        return String.format("Flight %s (%s) %s -> %s on %s at %s (%s hrs) - Status: %s - Price: $%.2f",
+        String priceDisplay = discountPercentage > 0 
+            ? String.format("Price: $%.2f (SPECIAL OFFER: %d%% OFF, was $%.2f)", 
+                            price, discountPercentage, originalPrice)
+            : String.format("Price: $%.2f", price);
+            
+        return String.format("Flight %s (%s) %s -> %s on %s at %s (%s hrs) - Status: %s - %s",
                              flightNumber, airline, departure, arrival, departureDate,
-                             departureTime.format(timeFormatter), duration, status, price);
+                             departureTime.format(timeFormatter), duration, status, priceDisplay);
     }
 }

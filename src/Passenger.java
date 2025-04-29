@@ -1,9 +1,11 @@
 import java.util.ArrayList;
 import java.util.List;
+import java.io.Serializable;
 
-class Passenger implements Observer {
+class Passenger implements Observer, Serializable {
+    private static final long serialVersionUID = 1L;
     String name;
-    private List<Flight> subscribedFlights = new ArrayList<>();
+    private transient List<Flight> subscribedFlights = new ArrayList<>(); // transient as Flight may not be serializable
     private List<Booking> bookings = new ArrayList<>();
     private int loyaltyPoints = 0;
 
@@ -24,6 +26,10 @@ class Passenger implements Observer {
     public void addBooking(Booking booking) {
         bookings.add(booking);
         loyaltyPoints += (int) (booking.getCost() / 10); // Earn 1 point per $10 spent
+    }
+
+    public void addLoyaltyPoints(int points) {
+        this.loyaltyPoints += points;
     }
 
     public void cancelBooking(Booking booking) {

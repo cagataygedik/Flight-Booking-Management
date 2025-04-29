@@ -126,4 +126,12 @@ class FlightDatabase {
                       .sorted()
                       .collect(Collectors.toList());
     }
+    
+    /**
+     * Gets all flights in the database.
+     * @return List of all flights.
+     */
+    public List<Flight> getAllFlights() {
+        return new ArrayList<>(flights);
+    }
 }
