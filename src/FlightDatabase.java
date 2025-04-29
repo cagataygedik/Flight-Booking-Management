@@ -9,6 +9,9 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 class FlightDatabase {
     private List<Flight> flights = new ArrayList<>();
@@ -85,5 +88,42 @@ class FlightDatabase {
             return true;
         }
         return false;
+    }
+    /**
+     * Gets a sorted list of unique departure city codes.
+     * @return List of unique departure cities.
+     */
+    public List<String> getAvailableDepartures() {
+        Set<String> departures = new TreeSet<>(); // Use TreeSet for automatic sorting and uniqueness
+        for (Flight flight : flights) {
+            departures.add(flight.getDeparture());
+        }
+        return new ArrayList<>(departures);
+    }
+
+    /**
+     * Gets a sorted list of unique arrival city codes.
+     * @return List of unique arrival cities.
+     */
+    public List<String> getAvailableArrivals() {
+        Set<String> arrivals = new TreeSet<>(); // Use TreeSet for automatic sorting and uniqueness
+        for (Flight flight : flights) {
+            arrivals.add(flight.getArrival());
+        }
+        return new ArrayList<>(arrivals);
+    }
+
+    /**
+     * Gets a sorted list of unique arrival city codes available from a specific departure city.
+     * @param departureCity The departure city code.
+     * @return List of unique arrival cities from the given departure.
+     */
+    public List<String> getAvailableArrivalsFrom(String departureCity) {
+        return flights.stream()
+                      .filter(f -> f.getDeparture().equalsIgnoreCase(departureCity))
+                      .map(Flight::getArrival)
+                      .distinct()
+                      .sorted()
+                      .collect(Collectors.toList());
     }
 }

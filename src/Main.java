@@ -15,7 +15,7 @@ public class Main {
 
         while (true) {
             displayMenu();
-            int choice = getMenuChoice();
+            int choice = getNumericChoice(1,8);
             switch (choice) {
                 case 1:
                     searchFlights();
@@ -60,15 +60,16 @@ public class Main {
         System.out.print("Choose an option: ");
     }
 
-    private static int getMenuChoice() {
+    private static int getNumericChoice(int min, int max) {
         while (true) {
             try {
+                System.out.print("Enter your choice (" + min + "-" + max + "): ");
                 int choice = scanner.nextInt();
                 scanner.nextLine();
-                if (choice >= 1 && choice <= 8) {
+                if (choice >= min && choice <= max) {
                     return choice;
                 } else {
-                    System.out.println(ConsoleColors.RED + "Please enter a number between 1 and 8." + ConsoleColors.RESET);
+                    System.out.println(ConsoleColors.RED + "Please enter a number between " + min + " and " + max + "." + ConsoleColors.RESET);
                 }
             } catch (InputMismatchException e) {
                 System.out.println(ConsoleColors.RED + "Invalid input. Please enter a number." + ConsoleColors.RESET);
@@ -77,14 +78,62 @@ public class Main {
         }
     }
 
+    private static void displayStringList(List<String> list, String title) {
+        System.out.println(ConsoleColors.CYAN + "--- " + title + " ---" + ConsoleColors.RESET);
+        if (list.isEmpty()) {
+            System.out.println(ConsoleColors.YELLOW + "No options available." + ConsoleColors.RESET);
+            return;
+        }
+        System.out.println(String.join(", ", list));
+    }
+
     private static void searchFlights() {
-        System.out.print("Enter departure city: ");
-        String departure = scanner.nextLine();
-        System.out.print("Enter arrival city: ");
-        String arrival = scanner.nextLine();
-        List<Flight> results = flightDb.searchFlights(departure, arrival);
+        List<String> departures = flightDb.getAvailableDepartures();
+        if (departures.isEmpty()) {
+            System.out.println(ConsoleColors.YELLOW + "No departure cities found in the database." + ConsoleColors.RESET);
+            return;
+        }
+        displayStringList(departures, "Available Departure Cities");
+        String selectedDeparture = null;
+        while (selectedDeparture == null) {
+            System.out.print("Enter departure city code: ");
+            String input = scanner.nextLine().toUpperCase();
+            for (String city : departures) {
+                if (city.equalsIgnoreCase(input)) {
+                    selectedDeparture = city;
+                    break;
+                }
+            }
+            if (selectedDeparture == null) {
+                System.out.println(ConsoleColors.RED + "Invalid departure city code. Please choose from the list above." + ConsoleColors.RESET);
+            }
+        }
+
+        List<String> arrivals = flightDb.getAvailableArrivalsFrom(selectedDeparture);
+        if (arrivals.isEmpty()) {
+            System.out.println(ConsoleColors.YELLOW + "No arrival cities found from " + selectedDeparture + "." + ConsoleColors.RESET);
+            return;
+        }
+        displayStringList(arrivals, "Available Arrival Cities from " + selectedDeparture);
+        String selectedArrival = null;
+        while (selectedArrival == null) {
+            System.out.print("Enter arrival city code: ");
+            String input = scanner.nextLine().toUpperCase();
+            for (String city : arrivals) {
+                if (city.equalsIgnoreCase(input)) {
+                    selectedArrival = city;
+                    break;
+                }
+            }
+            if (selectedArrival == null) {
+                System.out.println(ConsoleColors.RED + "Invalid arrival city code. Please choose from the list above." + ConsoleColors.RESET);
+            }
+        }
+
+        System.out.println(ConsoleColors.CYAN + "\nSearching for flights from " + selectedDeparture + " to " + selectedArrival + "..." + ConsoleColors.RESET);
+        List<Flight> results = flightDb.searchFlights(selectedDeparture, selectedArrival);
         if (results.isEmpty()) {
-            System.out.println(ConsoleColors.YELLOW + "No flights found." + ConsoleColors.RESET);
+            System.out.println(ConsoleColors.YELLOW + "No flights found for this route." + ConsoleColors.RESET);
         } else {
             System.out.println(ConsoleColors.CYAN + "Available flights:" + ConsoleColors.RESET);
             for (Flight flight : results) {
