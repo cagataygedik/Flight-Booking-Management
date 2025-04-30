@@ -1,6 +1,11 @@
 import java.util.InputMismatchException;
 import java.util.List;
 import java.util.Scanner;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
 public class Main {
     private static FlightDatabase flightDb = new FlightDatabase();
@@ -215,13 +220,286 @@ public class Main {
 
         System.out.println(ConsoleColors.CYAN + "\nSearching for flights from " + selectedDeparture + " to " + selectedArrival + "..." + ConsoleColors.RESET);
         List<Flight> results = flightDb.searchFlights(selectedDeparture, selectedArrival);
+        
         if (results.isEmpty()) {
             System.out.println(ConsoleColors.YELLOW + "No flights found for this route." + ConsoleColors.RESET);
-        } else {
-            System.out.println(ConsoleColors.CYAN + "Available flights:" + ConsoleColors.RESET);
-            for (Flight flight : results) {
-                System.out.println(flight);
+            return;
+        }
+        
+        // Apply filters (optional)
+        results = applyFilters(results);
+        
+        if (results.isEmpty()) {
+            System.out.println(ConsoleColors.YELLOW + "No flights match your filters." + ConsoleColors.RESET);
+            return;
+        }
+        
+        // Apply sorting
+        results = sortFlights(results);
+        
+        // Display results in a table format
+        displayFlightsTable(results);
+    }
+    
+    private static List<Flight> applyFilters(List<Flight> flights) {
+        System.out.println(ConsoleColors.CYAN + "\n--- Apply Filters (Optional) ---" + ConsoleColors.RESET);
+        System.out.println("Would you like to filter the results?");
+        System.out.println("1. Filter by date range");
+        System.out.println("2. Filter by maximum price");
+        System.out.println("3. Filter by airline");
+        System.out.println("4. Filter by maximum duration");
+        System.out.println("5. No filters");
+        System.out.print("Enter your choice (1-5): ");
+        
+        int choice;
+        try {
+            choice = Integer.parseInt(scanner.nextLine());
+        } catch (NumberFormatException e) {
+            choice = 5; // Default to no filters
+        }
+        
+        List<Flight> filteredFlights = new ArrayList<>(flights);
+        
+        switch (choice) {
+            case 1: // Date range
+                filteredFlights = filterByDateRange(filteredFlights);
+                break;
+            case 2: // Max price
+                filteredFlights = filterByMaxPrice(filteredFlights);
+                break;
+            case 3: // Airline
+                filteredFlights = filterByAirline(filteredFlights);
+                break;
+            case 4: // Max duration
+                filteredFlights = filterByMaxDuration(filteredFlights);
+                break;
+            default:
+                System.out.println(ConsoleColors.YELLOW + "No filters applied." + ConsoleColors.RESET);
+        }
+        
+        return filteredFlights;
+    }
+    
+    private static List<Flight> filterByDateRange(List<Flight> flights) {
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE;
+        LocalDate startDate = null;
+        LocalDate endDate = null;
+        
+        System.out.println(ConsoleColors.CYAN + "Enter date range (YYYY-MM-DD format)" + ConsoleColors.RESET);
+        
+        while (startDate == null) {
+            System.out.print("Start date: ");
+            String input = scanner.nextLine();
+            try {
+                startDate = LocalDate.parse(input, formatter);
+            } catch (DateTimeParseException e) {
+                System.out.println(ConsoleColors.RED + "Invalid date format. Please use YYYY-MM-DD." + ConsoleColors.RESET);
             }
+        }
+        
+        while (endDate == null) {
+            System.out.print("End date: ");
+            String input = scanner.nextLine();
+            try {
+                endDate = LocalDate.parse(input, formatter);
+                if (endDate.isBefore(startDate)) {
+                    System.out.println(ConsoleColors.RED + "End date must be after start date." + ConsoleColors.RESET);
+                    endDate = null;
+                }
+            } catch (DateTimeParseException e) {
+                System.out.println(ConsoleColors.RED + "Invalid date format. Please use YYYY-MM-DD." + ConsoleColors.RESET);
+            }
+        }
+        
+        LocalDate finalStartDate = startDate;
+        LocalDate finalEndDate = endDate;
+        
+        List<Flight> filtered = new ArrayList<>();
+        for (Flight flight : flights) {
+            LocalDate flightDate = flight.getDepartureDate();
+            if ((flightDate.isEqual(finalStartDate) || flightDate.isAfter(finalStartDate)) && 
+                (flightDate.isEqual(finalEndDate) || flightDate.isBefore(finalEndDate))) {
+                filtered.add(flight);
+            }
+        }
+        
+        System.out.println(ConsoleColors.GREEN + "Found " + filtered.size() + " flights between " + 
+                           startDate + " and " + endDate + ConsoleColors.RESET);
+        return filtered;
+    }
+    
+    private static List<Flight> filterByMaxPrice(List<Flight> flights) {
+        System.out.print("Enter maximum price (USD): ");
+        double maxPrice;
+        try {
+            maxPrice = Double.parseDouble(scanner.nextLine());
+        } catch (NumberFormatException e) {
+            System.out.println(ConsoleColors.RED + "Invalid input. Not applying price filter." + ConsoleColors.RESET);
+            return flights;
+        }
+        
+        List<Flight> filtered = new ArrayList<>();
+        for (Flight flight : flights) {
+            if (flight.getPrice() <= maxPrice) {
+                filtered.add(flight);
+            }
+        }
+        
+        System.out.println(ConsoleColors.GREEN + "Found " + filtered.size() + " flights under $" + maxPrice + ConsoleColors.RESET);
+        return filtered;
+    }
+    
+    private static List<Flight> filterByAirline(List<Flight> flights) {
+        // Get unique airlines from flights
+        List<String> airlines = new ArrayList<>();
+        for (Flight flight : flights) {
+            if (!airlines.contains(flight.getAirline())) {
+                airlines.add(flight.getAirline());
+            }
+        }
+        
+        System.out.println(ConsoleColors.CYAN + "Available airlines:" + ConsoleColors.RESET);
+        for (int i = 0; i < airlines.size(); i++) {
+            System.out.println((i + 1) + ". " + airlines.get(i));
+        }
+        
+        System.out.print("Select airline (1-" + airlines.size() + "): ");
+        int choice;
+        try {
+            choice = Integer.parseInt(scanner.nextLine()) - 1;
+        } catch (NumberFormatException e) {
+            System.out.println(ConsoleColors.RED + "Invalid input. Not applying airline filter." + ConsoleColors.RESET);
+            return flights;
+        }
+        
+        if (choice < 0 || choice >= airlines.size()) {
+            System.out.println(ConsoleColors.RED + "Invalid selection. Not applying airline filter." + ConsoleColors.RESET);
+            return flights;
+        }
+        
+        String selectedAirline = airlines.get(choice);
+        
+        List<Flight> filtered = new ArrayList<>();
+        for (Flight flight : flights) {
+            if (flight.getAirline().equals(selectedAirline)) {
+                filtered.add(flight);
+            }
+        }
+        
+        System.out.println(ConsoleColors.GREEN + "Found " + filtered.size() + " flights by " + selectedAirline + ConsoleColors.RESET);
+        return filtered;
+    }
+    
+    private static List<Flight> filterByMaxDuration(List<Flight> flights) {
+        System.out.print("Enter maximum flight duration in hours: ");
+        double maxDuration;
+        try {
+            maxDuration = Double.parseDouble(scanner.nextLine());
+        } catch (NumberFormatException e) {
+            System.out.println(ConsoleColors.RED + "Invalid input. Not applying duration filter." + ConsoleColors.RESET);
+            return flights;
+        }
+        
+        List<Flight> filtered = new ArrayList<>();
+        for (Flight flight : flights) {
+            if (flight.getDuration() <= maxDuration) {
+                filtered.add(flight);
+            }
+        }
+        
+        System.out.println(ConsoleColors.GREEN + "Found " + filtered.size() + " flights under " + maxDuration + " hours" + ConsoleColors.RESET);
+        return filtered;
+    }
+    
+    private static List<Flight> sortFlights(List<Flight> flights) {
+        System.out.println(ConsoleColors.CYAN + "\n--- Sort Results ---" + ConsoleColors.RESET);
+        System.out.println("How would you like to sort the results?");
+        System.out.println("1. Price (lowest first)");
+        System.out.println("2. Duration (shortest first)");
+        System.out.println("3. Departure time (earliest first)");
+        System.out.println("4. Airline (alphabetically)");
+        System.out.println("5. No sorting");
+        System.out.print("Enter your choice (1-5): ");
+        
+        int choice;
+        try {
+            choice = Integer.parseInt(scanner.nextLine());
+        } catch (NumberFormatException e) {
+            choice = 5; // Default to no sorting
+        }
+        
+        List<Flight> sortedFlights = new ArrayList<>(flights);
+        
+        switch (choice) {
+            case 1: // Price
+                sortedFlights.sort(Comparator.comparing(Flight::getPrice));
+                System.out.println(ConsoleColors.GREEN + "Sorted by price (lowest first)" + ConsoleColors.RESET);
+                break;
+            case 2: // Duration
+                sortedFlights.sort(Comparator.comparing(Flight::getDuration));
+                System.out.println(ConsoleColors.GREEN + "Sorted by duration (shortest first)" + ConsoleColors.RESET);
+                break;
+            case 3: // Departure time
+                sortedFlights.sort(Comparator.comparing(Flight::getDepartureDate)
+                                  .thenComparing(Flight::getDepartureTime));
+                System.out.println(ConsoleColors.GREEN + "Sorted by departure time (earliest first)" + ConsoleColors.RESET);
+                break;
+            case 4: // Airline
+                sortedFlights.sort(Comparator.comparing(Flight::getAirline));
+                System.out.println(ConsoleColors.GREEN + "Sorted by airline (alphabetically)" + ConsoleColors.RESET);
+                break;
+            default:
+                System.out.println(ConsoleColors.YELLOW + "No sorting applied." + ConsoleColors.RESET);
+        }
+        
+        return sortedFlights;
+    }
+    
+    private static void displayFlightsTable(List<Flight> flights) {
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+        
+        TableFormatter table = new TableFormatter(
+            "Flight #", "Airline", "From", "To", "Date", "Time", "Duration", "Price", "Status"
+        );
+        
+        for (Flight flight : flights) {
+            String durationStr = String.format("%.1f hrs", flight.getDuration());
+            String priceStr = String.format("$%.2f", flight.getPrice());
+            
+            if (flight.getDiscountPercentage() > 0) {
+                priceStr += ConsoleColors.GREEN + " (-" + flight.getDiscountPercentage() + "%)" + ConsoleColors.RESET;
+            }
+            
+            table.addRow(
+                flight.getFlightNumber(),
+                flight.getAirline(),
+                flight.getDeparture(),
+                flight.getArrival(),
+                flight.getDepartureDate().format(dateFormatter),
+                flight.getDepartureTime().format(timeFormatter),
+                durationStr,
+                priceStr,
+                getColoredStatus(flight.getStatus())
+            );
+        }
+        
+        System.out.println(ConsoleColors.CYAN + "\n--- Found " + flights.size() + " flights ---" + ConsoleColors.RESET);
+        System.out.println(table.render());
+    }
+    
+    private static String getColoredStatus(String status) {
+        switch (status) {
+            case "On Time":
+                return ConsoleColors.GREEN + status + ConsoleColors.RESET;
+            case "Delayed":
+                return ConsoleColors.YELLOW + status + ConsoleColors.RESET;
+            case "Cancelled":
+                return ConsoleColors.RED + status + ConsoleColors.RESET;
+            case "Boarding":
+                return ConsoleColors.CYAN + status + ConsoleColors.RESET;
+            default:
+                return status;
         }
     }
 

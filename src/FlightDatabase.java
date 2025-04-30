@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.HashSet;
 import java.util.stream.Collectors;
 
 class FlightDatabase {
@@ -125,6 +126,81 @@ class FlightDatabase {
                       .distinct()
                       .sorted()
                       .collect(Collectors.toList());
+    }
+    
+    /**
+     * Gets a list of airlines available in the database.
+     * @return List of unique airlines.
+     */
+    public List<String> getAvailableAirlines() {
+        Set<String> airlines = new TreeSet<>(); // Use TreeSet for automatic sorting and uniqueness
+        for (Flight flight : flights) {
+            airlines.add(flight.getAirline());
+        }
+        return new ArrayList<>(airlines);
+    }
+    
+    /**
+     * Gets flights between a date range.
+     * @param startDate The start date (inclusive).
+     * @param endDate The end date (inclusive).
+     * @return List of flights departing within the date range.
+     */
+    public List<Flight> getFlightsByDateRange(LocalDate startDate, LocalDate endDate) {
+        List<Flight> results = new ArrayList<>();
+        for (Flight flight : flights) {
+            LocalDate departureDate = flight.getDepartureDate();
+            if ((departureDate.isEqual(startDate) || departureDate.isAfter(startDate)) &&
+                (departureDate.isEqual(endDate) || departureDate.isBefore(endDate))) {
+                results.add(flight);
+            }
+        }
+        return results;
+    }
+    
+    /**
+     * Gets flights with a price less than or equal to the maximum price.
+     * @param maxPrice The maximum price.
+     * @return List of flights with price <= maxPrice.
+     */
+    public List<Flight> getFlightsByMaxPrice(double maxPrice) {
+        List<Flight> results = new ArrayList<>();
+        for (Flight flight : flights) {
+            if (flight.getPrice() <= maxPrice) {
+                results.add(flight);
+            }
+        }
+        return results;
+    }
+    
+    /**
+     * Gets flights for a specific airline.
+     * @param airline The airline name.
+     * @return List of flights operated by the airline.
+     */
+    public List<Flight> getFlightsByAirline(String airline) {
+        List<Flight> results = new ArrayList<>();
+        for (Flight flight : flights) {
+            if (flight.getAirline().equalsIgnoreCase(airline)) {
+                results.add(flight);
+            }
+        }
+        return results;
+    }
+    
+    /**
+     * Gets flights with a duration less than or equal to the maximum duration.
+     * @param maxDuration The maximum duration in hours.
+     * @return List of flights with duration <= maxDuration.
+     */
+    public List<Flight> getFlightsByMaxDuration(double maxDuration) {
+        List<Flight> results = new ArrayList<>();
+        for (Flight flight : flights) {
+            if (flight.getDuration() <= maxDuration) {
+                results.add(flight);
+            }
+        }
+        return results;
     }
     
     /**
