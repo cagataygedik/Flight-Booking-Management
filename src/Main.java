@@ -176,110 +176,267 @@ public class Main {
     }
 
     private static void searchFlights() {
-        List<String> departures = flightDb.getAvailableDepartures();
-        if (departures.isEmpty()) {
-            System.out.println(ConsoleColors.YELLOW + "No departure cities found in the database." + ConsoleColors.RESET);
-            return;
+        // Define search steps for our state machine
+        enum SearchStep {
+            SELECT_DEPARTURE,
+            SELECT_ARRIVAL,
+            APPLY_FILTERS,
+            SORT_RESULTS,
+            DISPLAY_RESULTS,
+            EXIT
         }
-        displayStringList(departures, "Available Departure Cities");
+        
+        SearchStep currentStep = SearchStep.SELECT_DEPARTURE;
         String selectedDeparture = null;
-        while (selectedDeparture == null) {
-            System.out.print("Enter departure city code: ");
-            String input = scanner.nextLine().toUpperCase();
-            for (String city : departures) {
-                if (city.equalsIgnoreCase(input)) {
-                    selectedDeparture = city;
-                    break;
-                }
-            }
-            if (selectedDeparture == null) {
-                System.out.println(ConsoleColors.RED + "Invalid departure city code. Please choose from the list above." + ConsoleColors.RESET);
-            }
-        }
-
-        List<String> arrivals = flightDb.getAvailableArrivalsFrom(selectedDeparture);
-        if (arrivals.isEmpty()) {
-            System.out.println(ConsoleColors.YELLOW + "No arrival cities found from " + selectedDeparture + "." + ConsoleColors.RESET);
-            return;
-        }
-        displayStringList(arrivals, "Available Arrival Cities from " + selectedDeparture);
         String selectedArrival = null;
-        while (selectedArrival == null) {
-            System.out.print("Enter arrival city code: ");
-            String input = scanner.nextLine().toUpperCase();
-            for (String city : arrivals) {
-                if (city.equalsIgnoreCase(input)) {
-                    selectedArrival = city;
+        List<Flight> results = null;
+        
+        while (currentStep != SearchStep.EXIT) {
+            switch (currentStep) {
+                case SELECT_DEPARTURE:
+                    List<String> departures = flightDb.getAvailableDepartures();
+                    if (departures.isEmpty()) {
+                        System.out.println(ConsoleColors.YELLOW + "No departure cities found in the database." + ConsoleColors.RESET);
+                        currentStep = SearchStep.EXIT;
+                        break;
+                    }
+                    
+                    displayStringList(departures, "Available Departure Cities");
+                    System.out.println("Enter 'back' to return to main menu");
+                    System.out.print("Enter departure city code: ");
+                    String departureInput = scanner.nextLine().toUpperCase();
+                    
+                    if (departureInput.equalsIgnoreCase("back")) {
+                        currentStep = SearchStep.EXIT;
+                        break;
+                    }
+                    
+                    boolean validDeparture = false;
+                    for (String city : departures) {
+                        if (city.equalsIgnoreCase(departureInput)) {
+                            selectedDeparture = city;
+                            validDeparture = true;
+                            break;
+                        }
+                    }
+                    
+                    if (validDeparture) {
+                        currentStep = SearchStep.SELECT_ARRIVAL;
+                    } else {
+                        System.out.println(ConsoleColors.RED + "Invalid departure city code. Please try again." + ConsoleColors.RESET);
+                    }
                     break;
-                }
-            }
-            if (selectedArrival == null) {
-                System.out.println(ConsoleColors.RED + "Invalid arrival city code. Please choose from the list above." + ConsoleColors.RESET);
+                    
+                case SELECT_ARRIVAL:
+                    List<String> arrivals = flightDb.getAvailableArrivalsFrom(selectedDeparture);
+                    if (arrivals.isEmpty()) {
+                        System.out.println(ConsoleColors.YELLOW + "No arrival cities found from " + selectedDeparture + "." + ConsoleColors.RESET);
+                        currentStep = SearchStep.SELECT_DEPARTURE;
+                        break;
+                    }
+                    
+                    displayStringList(arrivals, "Available Arrival Cities from " + selectedDeparture);
+                    System.out.println("Enter 'back' to select a different departure city");
+                    System.out.print("Enter arrival city code: ");
+                    String arrivalInput = scanner.nextLine().toUpperCase();
+                    
+                    if (arrivalInput.equalsIgnoreCase("back")) {
+                        currentStep = SearchStep.SELECT_DEPARTURE;
+                        break;
+                    }
+                    
+                    boolean validArrival = false;
+                    for (String city : arrivals) {
+                        if (city.equalsIgnoreCase(arrivalInput)) {
+                            selectedArrival = city;
+                            validArrival = true;
+                            break;
+                        }
+                    }
+                    
+                    if (validArrival) {
+                        System.out.println(ConsoleColors.CYAN + "\nSearching for flights from " + selectedDeparture + 
+                                           " to " + selectedArrival + "..." + ConsoleColors.RESET);
+                        results = flightDb.searchFlights(selectedDeparture, selectedArrival);
+                        
+                        if (results.isEmpty()) {
+                            System.out.println(ConsoleColors.YELLOW + "No flights found for this route." + ConsoleColors.RESET);
+                            System.out.println("Enter 'back' to select different cities or any key to return to main menu");
+                            String noResultsChoice = scanner.nextLine();
+                            currentStep = noResultsChoice.equalsIgnoreCase("back") ? 
+                                          SearchStep.SELECT_ARRIVAL : SearchStep.EXIT;
+                        } else {
+                            currentStep = SearchStep.APPLY_FILTERS;
+                        }
+                    } else {
+                        System.out.println(ConsoleColors.RED + "Invalid arrival city code. Please try again." + ConsoleColors.RESET);
+                    }
+                    break;
+                    
+                case APPLY_FILTERS:
+                    System.out.println(ConsoleColors.CYAN + "\n--- Apply Filters (Optional) ---" + ConsoleColors.RESET);
+                    System.out.println("Would you like to filter the results?");
+                    System.out.println("1. Filter by date range");
+                    System.out.println("2. Filter by maximum price");
+                    System.out.println("3. Filter by airline");
+                    System.out.println("4. Filter by maximum duration");
+                    System.out.println("5. No filters");
+                    System.out.println("6. Back to arrival selection");
+                    System.out.print("Enter your choice (1-6): ");
+                    
+                    int filterChoice;
+                    try {
+                        filterChoice = Integer.parseInt(scanner.nextLine());
+                    } catch (NumberFormatException e) {
+                        filterChoice = 5; // Default to no filters
+                    }
+                    
+                    if (filterChoice == 6) {
+                        currentStep = SearchStep.SELECT_ARRIVAL;
+                        break;
+                    }
+                    
+                    List<Flight> filteredResults = new ArrayList<>(results);
+                    
+                    switch (filterChoice) {
+                        case 1: // Date range
+                            filteredResults = filterByDateRange(filteredResults);
+                            break;
+                        case 2: // Max price
+                            filteredResults = filterByMaxPrice(filteredResults);
+                            break;
+                        case 3: // Airline
+                            filteredResults = filterByAirline(filteredResults);
+                            break;
+                        case 4: // Max duration
+                            filteredResults = filterByMaxDuration(filteredResults);
+                            break;
+                        default:
+                            System.out.println(ConsoleColors.YELLOW + "No filters applied." + ConsoleColors.RESET);
+                    }
+                    
+                    if (filteredResults.isEmpty()) {
+                        System.out.println(ConsoleColors.YELLOW + "No flights match your filters." + ConsoleColors.RESET);
+                        System.out.println("Enter 'back' to try different filters or any key to start a new search");
+                        String noMatchChoice = scanner.nextLine();
+                        currentStep = noMatchChoice.equalsIgnoreCase("back") ? 
+                                      SearchStep.APPLY_FILTERS : SearchStep.SELECT_DEPARTURE;
+                        break;
+                    }
+                    
+                    results = filteredResults;
+                    currentStep = SearchStep.SORT_RESULTS;
+                    break;
+                    
+                case SORT_RESULTS:
+                    System.out.println(ConsoleColors.CYAN + "\n--- Sort Results ---" + ConsoleColors.RESET);
+                    System.out.println("How would you like to sort the results?");
+                    System.out.println("1. Price (lowest first)");
+                    System.out.println("2. Duration (shortest first)");
+                    System.out.println("3. Departure time (earliest first)");
+                    System.out.println("4. Airline (alphabetically)");
+                    System.out.println("5. No sorting");
+                    System.out.println("6. Back to filters");
+                    System.out.print("Enter your choice (1-6): ");
+                    
+                    int sortChoice;
+                    try {
+                        sortChoice = Integer.parseInt(scanner.nextLine());
+                    } catch (NumberFormatException e) {
+                        sortChoice = 5; // Default to no sorting
+                    }
+                    
+                    if (sortChoice == 6) {
+                        currentStep = SearchStep.APPLY_FILTERS;
+                        break;
+                    }
+                    
+                    List<Flight> sortedResults = new ArrayList<>(results);
+                    
+                    switch (sortChoice) {
+                        case 1: // Price
+                            sortedResults.sort(Comparator.comparing(Flight::getPrice));
+                            System.out.println(ConsoleColors.GREEN + "Sorted by price (lowest first)" + ConsoleColors.RESET);
+                            break;
+                        case 2: // Duration
+                            sortedResults.sort(Comparator.comparing(Flight::getDuration));
+                            System.out.println(ConsoleColors.GREEN + "Sorted by duration (shortest first)" + ConsoleColors.RESET);
+                            break;
+                        case 3: // Departure time
+                            sortedResults.sort(Comparator.comparing(Flight::getDepartureDate)
+                                            .thenComparing(Flight::getDepartureTime));
+                            System.out.println(ConsoleColors.GREEN + "Sorted by departure time (earliest first)" + ConsoleColors.RESET);
+                            break;
+                        case 4: // Airline
+                            sortedResults.sort(Comparator.comparing(Flight::getAirline));
+                            System.out.println(ConsoleColors.GREEN + "Sorted by airline (alphabetically)" + ConsoleColors.RESET);
+                            break;
+                        default:
+                            System.out.println(ConsoleColors.YELLOW + "No sorting applied." + ConsoleColors.RESET);
+                    }
+                    
+                    results = sortedResults;
+                    currentStep = SearchStep.DISPLAY_RESULTS;
+                    break;
+                    
+                case DISPLAY_RESULTS:
+                    displayFlightsTable(results);
+                    System.out.println("\nEnter 'book' to book a flight, 'back' to modify search parameters, or any key to return to main menu");
+                    String displayChoice = scanner.nextLine().toLowerCase();
+                    
+                    if (displayChoice.equals("book")) {
+                        System.out.print("Enter flight number to book: ");
+                        String flightNumber = scanner.nextLine();
+                        Flight selectedFlight = null;
+                        
+                        for (Flight flight : results) {
+                            if (flight.getFlightNumber().equalsIgnoreCase(flightNumber)) {
+                                selectedFlight = flight;
+                                break;
+                            }
+                        }
+                        
+                        if (selectedFlight != null) {
+                            // Start booking process for the selected flight
+                            bookSpecificFlight(selectedFlight);
+                            currentStep = SearchStep.EXIT;
+                        } else {
+                            System.out.println(ConsoleColors.RED + "Invalid flight number. Please try again." + ConsoleColors.RESET);
+                            // Stay on display results page
+                        }
+                    } else if (displayChoice.equals("back")) {
+                        currentStep = SearchStep.SORT_RESULTS;
+                    } else {
+                        currentStep = SearchStep.EXIT;
+                    }
+                    break;
             }
         }
+    }
+    
+    /**
+     * Helper method to book a specific flight selected from search results
+     */
+    private static void bookSpecificFlight(Flight flight) {
+        System.out.println(ConsoleColors.CYAN + "Booking Flight: " + flight.getFlightNumber() + 
+                           " from " + flight.getDeparture() + " to " + flight.getArrival() + ConsoleColors.RESET);
+        
+        System.out.print("Select seat (window, aisle, middle): ");
+        String seat = scanner.nextLine();
+        BookingComponent bookingComponent = new ConcreteBooking(flight, currentPassenger.name, seat);
+        Booking booking = new Booking(bookingComponent);
+        
+        // Process payment
+        if (paymentProcessor.processPayment(booking.getCost(), booking)) {
+            currentPassenger.addBooking(booking);
+            currentPassenger.subscribeToFlight(flight);
+            System.out.println(ConsoleColors.GREEN + "Booking created: " + booking.getDescription() + " - Cost: $" + booking.getCost() + ConsoleColors.RESET);
+            System.out.println(ConsoleColors.GREEN + "You are now subscribed to updates for Flight " + flight.getFlightNumber() + ConsoleColors.RESET);
+        } else {
+            System.out.println(ConsoleColors.RED + "Booking cancelled due to payment failure." + ConsoleColors.RESET);
+        }
+    }
 
-        System.out.println(ConsoleColors.CYAN + "\nSearching for flights from " + selectedDeparture + " to " + selectedArrival + "..." + ConsoleColors.RESET);
-        List<Flight> results = flightDb.searchFlights(selectedDeparture, selectedArrival);
-        
-        if (results.isEmpty()) {
-            System.out.println(ConsoleColors.YELLOW + "No flights found for this route." + ConsoleColors.RESET);
-            return;
-        }
-        
-        // Apply filters (optional)
-        results = applyFilters(results);
-        
-        if (results.isEmpty()) {
-            System.out.println(ConsoleColors.YELLOW + "No flights match your filters." + ConsoleColors.RESET);
-            return;
-        }
-        
-        // Apply sorting
-        results = sortFlights(results);
-        
-        // Display results in a table format
-        displayFlightsTable(results);
-    }
-    
-    private static List<Flight> applyFilters(List<Flight> flights) {
-        System.out.println(ConsoleColors.CYAN + "\n--- Apply Filters (Optional) ---" + ConsoleColors.RESET);
-        System.out.println("Would you like to filter the results?");
-        System.out.println("1. Filter by date range");
-        System.out.println("2. Filter by maximum price");
-        System.out.println("3. Filter by airline");
-        System.out.println("4. Filter by maximum duration");
-        System.out.println("5. No filters");
-        System.out.print("Enter your choice (1-5): ");
-        
-        int choice;
-        try {
-            choice = Integer.parseInt(scanner.nextLine());
-        } catch (NumberFormatException e) {
-            choice = 5; // Default to no filters
-        }
-        
-        List<Flight> filteredFlights = new ArrayList<>(flights);
-        
-        switch (choice) {
-            case 1: // Date range
-                filteredFlights = filterByDateRange(filteredFlights);
-                break;
-            case 2: // Max price
-                filteredFlights = filterByMaxPrice(filteredFlights);
-                break;
-            case 3: // Airline
-                filteredFlights = filterByAirline(filteredFlights);
-                break;
-            case 4: // Max duration
-                filteredFlights = filterByMaxDuration(filteredFlights);
-                break;
-            default:
-                System.out.println(ConsoleColors.YELLOW + "No filters applied." + ConsoleColors.RESET);
-        }
-        
-        return filteredFlights;
-    }
-    
     private static List<Flight> filterByDateRange(List<Flight> flights) {
         DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE;
         LocalDate startDate = null;
@@ -409,50 +566,6 @@ public class Main {
         
         System.out.println(ConsoleColors.GREEN + "Found " + filtered.size() + " flights under " + maxDuration + " hours" + ConsoleColors.RESET);
         return filtered;
-    }
-    
-    private static List<Flight> sortFlights(List<Flight> flights) {
-        System.out.println(ConsoleColors.CYAN + "\n--- Sort Results ---" + ConsoleColors.RESET);
-        System.out.println("How would you like to sort the results?");
-        System.out.println("1. Price (lowest first)");
-        System.out.println("2. Duration (shortest first)");
-        System.out.println("3. Departure time (earliest first)");
-        System.out.println("4. Airline (alphabetically)");
-        System.out.println("5. No sorting");
-        System.out.print("Enter your choice (1-5): ");
-        
-        int choice;
-        try {
-            choice = Integer.parseInt(scanner.nextLine());
-        } catch (NumberFormatException e) {
-            choice = 5; // Default to no sorting
-        }
-        
-        List<Flight> sortedFlights = new ArrayList<>(flights);
-        
-        switch (choice) {
-            case 1: // Price
-                sortedFlights.sort(Comparator.comparing(Flight::getPrice));
-                System.out.println(ConsoleColors.GREEN + "Sorted by price (lowest first)" + ConsoleColors.RESET);
-                break;
-            case 2: // Duration
-                sortedFlights.sort(Comparator.comparing(Flight::getDuration));
-                System.out.println(ConsoleColors.GREEN + "Sorted by duration (shortest first)" + ConsoleColors.RESET);
-                break;
-            case 3: // Departure time
-                sortedFlights.sort(Comparator.comparing(Flight::getDepartureDate)
-                                  .thenComparing(Flight::getDepartureTime));
-                System.out.println(ConsoleColors.GREEN + "Sorted by departure time (earliest first)" + ConsoleColors.RESET);
-                break;
-            case 4: // Airline
-                sortedFlights.sort(Comparator.comparing(Flight::getAirline));
-                System.out.println(ConsoleColors.GREEN + "Sorted by airline (alphabetically)" + ConsoleColors.RESET);
-                break;
-            default:
-                System.out.println(ConsoleColors.YELLOW + "No sorting applied." + ConsoleColors.RESET);
-        }
-        
-        return sortedFlights;
     }
     
     private static void displayFlightsTable(List<Flight> flights) {
