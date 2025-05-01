@@ -649,13 +649,28 @@ public class Main {
         for (int i = 0; i < currentPassenger.getBookings().size(); i++) {
             System.out.println((i + 1) + ". " + currentPassenger.getBookings().get(i).getDescription());
         }
+        System.out.println("Enter 'back' to return to main menu");
         System.out.print("Enter booking number: ");
-        int bookingIndex = scanner.nextInt() - 1;
-        scanner.nextLine();
-        if (bookingIndex < 0 || bookingIndex >= currentPassenger.getBookings().size()) {
-            System.out.println(ConsoleColors.RED + "Invalid booking number." + ConsoleColors.RESET);
+        
+        String input = scanner.nextLine();
+        if (input.equalsIgnoreCase("back")) {
+            System.out.println(ConsoleColors.YELLOW + "Returning to main menu." + ConsoleColors.RESET);
             return;
         }
+        
+        int bookingIndex;
+        try {
+            bookingIndex = Integer.parseInt(input) - 1;
+            if (bookingIndex < 0 || bookingIndex >= currentPassenger.getBookings().size()) {
+                System.out.println(ConsoleColors.RED + "Invalid booking number. Please select a number between 1 and " + 
+                                  currentPassenger.getBookings().size() + "." + ConsoleColors.RESET);
+                return;
+            }
+        } catch (NumberFormatException e) {
+            System.out.println(ConsoleColors.RED + "Invalid input. Please enter a number or 'back'." + ConsoleColors.RESET);
+            return;
+        }
+        
         Booking booking = currentPassenger.getBookings().get(bookingIndex);
         BookingComponent bookingComponent = booking.bookingComponent;
         
@@ -728,20 +743,49 @@ public class Main {
         for (int i = 0; i < currentPassenger.getBookings().size(); i++) {
             System.out.println((i + 1) + ". " + currentPassenger.getBookings().get(i).getDescription());
         }
-        System.out.print("Enter booking number: ");
-        int bookingIndex = scanner.nextInt() - 1;
-        scanner.nextLine();
-        if (bookingIndex < 0 || bookingIndex >= currentPassenger.getBookings().size()) {
-            System.out.println(ConsoleColors.RED + "Invalid booking number." + ConsoleColors.RESET);
+        System.out.println("Enter 'back' to return to main menu");
+        System.out.print("Enter booking number or flight number: ");
+        
+        String input = scanner.nextLine();
+        if (input.equalsIgnoreCase("back")) {
+            System.out.println(ConsoleColors.YELLOW + "Returning to main menu." + ConsoleColors.RESET);
             return;
         }
-        Booking booking = currentPassenger.getBookings().get(bookingIndex);
+        
+        Booking selectedBooking = null;
+        
+        // First try to parse as a numeric index
+        try {
+            int bookingIndex = Integer.parseInt(input) - 1;
+            if (bookingIndex >= 0 && bookingIndex < currentPassenger.getBookings().size()) {
+                selectedBooking = currentPassenger.getBookings().get(bookingIndex);
+            } else {
+                System.out.println(ConsoleColors.RED + "Invalid booking number. Please select a number between 1 and " + 
+                                  currentPassenger.getBookings().size() + "." + ConsoleColors.RESET);
+                return;
+            }
+        } catch (NumberFormatException e) {
+            // If not a number, try to match against flight numbers
+            for (Booking booking : currentPassenger.getBookings()) {
+                if (booking.getFlight().getFlightNumber().equalsIgnoreCase(input) || 
+                    booking.getDescription().toLowerCase().contains(input.toLowerCase())) {
+                    selectedBooking = booking;
+                    break;
+                }
+            }
+            
+            if (selectedBooking == null) {
+                System.out.println(ConsoleColors.RED + "No booking found matching '" + input + "'. Please enter a valid booking number or flight number." + ConsoleColors.RESET);
+                return;
+            }
+        }
         
         System.out.println(ConsoleColors.YELLOW + "Are you sure you want to cancel this booking? (y/n)" + ConsoleColors.RESET);
+        System.out.println(selectedBooking.getDescription() + " - Cost: $" + selectedBooking.getCost());
         String confirm = scanner.nextLine().toLowerCase();
         
         if (confirm.equals("y")) {
-            currentPassenger.cancelBooking(booking);
+            currentPassenger.cancelBooking(selectedBooking);
             System.out.println(ConsoleColors.GREEN + "Booking canceled successfully." + ConsoleColors.RESET);
             
             // Refund policy information

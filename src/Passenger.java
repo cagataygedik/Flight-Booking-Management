@@ -14,11 +14,20 @@ class Passenger implements Observer, Serializable {
     }
 
     public void subscribeToFlight(Flight flight) {
+        // Initialize subscribedFlights if null (happens after deserialization)
+        if (subscribedFlights == null) {
+            subscribedFlights = new ArrayList<>();
+        }
         flight.addObserver(this);
         subscribedFlights.add(flight);
     }
 
     public void unsubscribeFromFlight(Flight flight) {
+        // Initialize subscribedFlights if null (happens after deserialization)
+        if (subscribedFlights == null) {
+            subscribedFlights = new ArrayList<>();
+            return; // Nothing to remove if it was null
+        }
         flight.removeObserver(this);
         subscribedFlights.remove(flight);
     }
