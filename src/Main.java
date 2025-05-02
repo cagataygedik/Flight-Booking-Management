@@ -650,7 +650,7 @@ public class Main {
             System.out.println((i + 1) + ". " + currentPassenger.getBookings().get(i).getDescription());
         }
         System.out.println("Enter 'back' to return to main menu");
-        System.out.print("Enter booking number: ");
+        System.out.print("Enter booking number or flight number: ");
         
         String input = scanner.nextLine();
         if (input.equalsIgnoreCase("back")) {
@@ -658,68 +658,167 @@ public class Main {
             return;
         }
         
-        int bookingIndex;
+        Booking selectedBooking = null;
+        
+        // First try to parse as a numeric index
         try {
-            bookingIndex = Integer.parseInt(input) - 1;
-            if (bookingIndex < 0 || bookingIndex >= currentPassenger.getBookings().size()) {
+            int bookingIndex = Integer.parseInt(input) - 1;
+            if (bookingIndex >= 0 && bookingIndex < currentPassenger.getBookings().size()) {
+                selectedBooking = currentPassenger.getBookings().get(bookingIndex);
+            } else {
                 System.out.println(ConsoleColors.RED + "Invalid booking number. Please select a number between 1 and " + 
                                   currentPassenger.getBookings().size() + "." + ConsoleColors.RESET);
                 return;
             }
         } catch (NumberFormatException e) {
-            System.out.println(ConsoleColors.RED + "Invalid input. Please enter a number or 'back'." + ConsoleColors.RESET);
-            return;
-        }
-        
-        Booking booking = currentPassenger.getBookings().get(bookingIndex);
-        BookingComponent bookingComponent = booking.bookingComponent;
-        
-        double originalCost = booking.getCost();
-        
-        System.out.println(ConsoleColors.CYAN + "Customize your booking with additional services:" + ConsoleColors.RESET);
-        while (true) {
-            System.out.println("1. Add Insurance (+$50)");
-            System.out.println("2. Add Meal (+$20)");
-            System.out.println("3. Add Priority Boarding (+$30)");
-            System.out.println("4. Done");
-            System.out.print("Choose a service to add (or 4 to finish): ");
-            int choice = scanner.nextInt();
-            scanner.nextLine();
-            if (choice == 4) break;
-            switch (choice) {
-                case 1:
-                    bookingComponent = new InsuranceDecorator(bookingComponent);
+            // If not a number, try to match against flight numbers or description
+            for (Booking booking : currentPassenger.getBookings()) {
+                if (booking.getFlight().getFlightNumber().equalsIgnoreCase(input) || 
+                    booking.getDescription().toLowerCase().contains(input.toLowerCase())) {
+                    selectedBooking = booking;
                     break;
-                case 2:
-                    bookingComponent = new MealDecorator(bookingComponent);
-                    break;
-                case 3:
-                    bookingComponent = new PriorityBoardingDecorator(bookingComponent);
-                    break;
-                default:
-                    System.out.println(ConsoleColors.RED + "Invalid choice." + ConsoleColors.RESET);
+                }
             }
-        }
-        
-        booking.setBookingComponent(bookingComponent);
-        double newCost = booking.getCost();
-        double additionalCost = newCost - originalCost;
-        
-        if (additionalCost > 0) {
-            System.out.println(ConsoleColors.YELLOW + "Additional cost for services: $" + String.format("%.2f", additionalCost) + ConsoleColors.RESET);
             
-            // Process payment for the additional services only if there are any
-            if (paymentProcessor.processPayment(additionalCost, booking)) {
-                // Add loyalty points for the additional purchase
-                currentPassenger.addLoyaltyPoints((int) (additionalCost / 10));
-                System.out.println(ConsoleColors.GREEN + "Final Booking: " + booking.getDescription() + " - Total Cost: $" + booking.getCost() + ConsoleColors.RESET);
-            } else {
-                // If payment fails, revert to original booking without the new services
-                booking.setBookingComponent(bookingComponent);
-                System.out.println(ConsoleColors.RED + "Customization cancelled due to payment failure. Original booking preserved." + ConsoleColors.RESET);
+            if (selectedBooking == null) {
+                System.out.println(ConsoleColors.RED + "No booking found matching '" + input + "'. Please enter a valid booking number or flight number." + ConsoleColors.RESET);
+                return;
             }
-        } else {
-            System.out.println(ConsoleColors.GREEN + "Final Booking: " + booking.getDescription() + " - Total Cost: $" + booking.getCost() + ConsoleColors.RESET);
+        }
+        
+        BookingComponent bookingComponent = selectedBooking.bookingComponent;
+        double originalCost = selectedBooking.getCost();
+        
+        // Track selected services
+        boolean hasInsurance = false;
+        boolean hasMeal = false;
+        boolean hasPriorityBoarding = false;
+        
+        System.out.println(ConsoleColors.CYAN + "\n=== Customize your booking with additional services ===" + ConsoleColors.RESET);
+        
+        while (true) {
+            // Calculate current selections and price
+            double currentTotalCost = originalCost;
+            double addOnsTotal = 0;
+            
+            if (hasInsurance) addOnsTotal += 50.0;
+            if (hasMeal) addOnsTotal += 20.0;
+            if (hasPriorityBoarding) addOnsTotal += 30.0;
+            
+            currentTotalCost += addOnsTotal;
+            
+            // Show the booking status and selections
+            System.out.println(ConsoleColors.YELLOW + "\n--- Current Selection Summary ---" + ConsoleColors.RESET);
+            System.out.println("Base booking: " + selectedBooking.getDescription());
+            System.out.println("Base price: $" + String.format("%.2f", originalCost));
+            
+            if (hasInsurance || hasMeal || hasPriorityBoarding) {
+                System.out.println("\nSelected services:");
+                if (hasInsurance) System.out.println("• Insurance (+$50.00)");
+                if (hasMeal) System.out.println("• Meal (+$20.00)");
+                if (hasPriorityBoarding) System.out.println("• Priority Boarding (+$30.00)");
+                System.out.println("\nTotal add-ons: $" + String.format("%.2f", addOnsTotal));
+            } else {
+                System.out.println("\nNo services selected yet.");
+            }
+            
+            System.out.println(ConsoleColors.GREEN + "Grand Total: $" + String.format("%.2f", currentTotalCost) + ConsoleColors.RESET);
+            
+            // Service selection menu
+            System.out.println(ConsoleColors.CYAN + "\n--- Available Services ---" + ConsoleColors.RESET);
+            
+            // Protection Category
+            System.out.println(ConsoleColors.YELLOW + "\n◆ Protection Services" + ConsoleColors.RESET);
+            System.out.println("1. " + (hasInsurance ? "[✓] " : "[ ] ") + "Add Insurance (+$50.00)");
+            System.out.println("   • Coverage for flight delays, cancellations, and lost baggage");
+            System.out.println("   • 24/7 emergency assistance hotline");
+            
+            // Comfort Category
+            System.out.println(ConsoleColors.YELLOW + "\n◆ Comfort Services" + ConsoleColors.RESET);
+            System.out.println("2. " + (hasMeal ? "[✓] " : "[ ] ") + "Add Meal (+$20.00)");
+            System.out.println("   • Choose from standard, vegetarian, vegan, or gluten-free options");
+            System.out.println("   • Includes beverage and dessert");
+            
+            // Priority Category
+            System.out.println(ConsoleColors.YELLOW + "\n◆ Priority Services" + ConsoleColors.RESET);
+            System.out.println("3. " + (hasPriorityBoarding ? "[✓] " : "[ ] ") + "Add Priority Boarding (+$30.00)");
+            System.out.println("   • Board the plane before general boarding");
+            System.out.println("   • Guaranteed overhead bin space near your seat");
+            
+            System.out.println(ConsoleColors.CYAN + "\n--- Options ---" + ConsoleColors.RESET);
+            System.out.println("4. Save and apply these selections");
+            System.out.println("5. Cancel and return to main menu");
+            
+            System.out.print("\nChoose an option (1-5): ");
+            int choice;
+            try {
+                choice = Integer.parseInt(scanner.nextLine());
+            } catch (NumberFormatException ex) {
+                System.out.println(ConsoleColors.RED + "Invalid input. Please enter a number." + ConsoleColors.RESET);
+                continue;
+            }
+            
+            switch (choice) {
+                case 1: // Toggle insurance
+                    hasInsurance = !hasInsurance;
+                    System.out.println(ConsoleColors.GREEN + "Insurance " + (hasInsurance ? "added" : "removed") + ConsoleColors.RESET);
+                    break;
+                    
+                case 2: // Toggle meal
+                    hasMeal = !hasMeal;
+                    System.out.println(ConsoleColors.GREEN + "Meal " + (hasMeal ? "added" : "removed") + ConsoleColors.RESET);
+                    break;
+                    
+                case 3: // Toggle priority boarding
+                    hasPriorityBoarding = !hasPriorityBoarding;
+                    System.out.println(ConsoleColors.GREEN + "Priority Boarding " + (hasPriorityBoarding ? "added" : "removed") + ConsoleColors.RESET);
+                    break;
+                    
+                case 4: // Save selections
+                    // Apply the selections to booking component
+                    BookingComponent updatedComponent = selectedBooking.bookingComponent;
+                    
+                    if (hasInsurance) {
+                        updatedComponent = new InsuranceDecorator(updatedComponent);
+                    }
+                    if (hasMeal) {
+                        updatedComponent = new MealDecorator(updatedComponent);
+                    }
+                    if (hasPriorityBoarding) {
+                        updatedComponent = new PriorityBoardingDecorator(updatedComponent);
+                    }
+                    
+                    selectedBooking.setBookingComponent(updatedComponent);
+                    double newCost = selectedBooking.getCost();
+                    double additionalCost = newCost - originalCost;
+                    
+                    if (additionalCost > 0) {
+                        System.out.println(ConsoleColors.YELLOW + "Additional cost for services: $" + 
+                                          String.format("%.2f", additionalCost) + ConsoleColors.RESET);
+                        
+                        // Process payment for the additional services only if there are any
+                        if (paymentProcessor.processPayment(additionalCost, selectedBooking)) {
+                            // Add loyalty points for the additional purchase
+                            currentPassenger.addLoyaltyPoints((int) (additionalCost / 10));
+                            System.out.println(ConsoleColors.GREEN + "Final Booking: " + selectedBooking.getDescription() + 
+                                              " - Total Cost: $" + String.format("%.2f", selectedBooking.getCost()) + ConsoleColors.RESET);
+                        } else {
+                            // If payment fails, revert to original booking without the new services
+                            selectedBooking.setBookingComponent(bookingComponent);
+                            System.out.println(ConsoleColors.RED + "Customization cancelled due to payment failure. Original booking preserved." + ConsoleColors.RESET);
+                        }
+                    } else {
+                        System.out.println(ConsoleColors.GREEN + "No changes were made to your booking." + ConsoleColors.RESET);
+                    }
+                    return;
+                    
+                case 5: // Cancel
+                    System.out.println(ConsoleColors.YELLOW + "Customization cancelled. Returning to main menu." + ConsoleColors.RESET);
+                    return;
+                    
+                default:
+                    System.out.println(ConsoleColors.RED + "Invalid choice. Please select a number between 1 and 5." + ConsoleColors.RESET);
+            }
         }
     }
 
