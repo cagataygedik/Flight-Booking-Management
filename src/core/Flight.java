@@ -21,6 +21,7 @@ public class Flight implements Observable {
     private int discountPercentage;
     private String status;
     private List<Observer> observers = new ArrayList<>();
+    private SeatMap seatMap;
 
 
     public Flight(String flightNumber, String departure, String arrival, String airline,
@@ -36,6 +37,7 @@ public class Flight implements Observable {
         this.originalPrice = price;
         this.discountPercentage = 0;
         this.status = "On Time";
+        this.seatMap = new SeatMap(flightNumber);
     }
 
     public void setSpecialOffer(int discountPercentage, double newPrice) {
@@ -90,6 +92,7 @@ public class Flight implements Observable {
     public double getOriginalPrice() { return originalPrice; }
     public int getDiscountPercentage() { return discountPercentage; }
     public String getStatus() { return status; }
+    public SeatMap getSeatMap() { return seatMap; }
 
 
     @Override

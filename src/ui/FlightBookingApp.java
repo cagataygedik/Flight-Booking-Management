@@ -41,7 +41,7 @@ public class FlightBookingApp {
 
         while (true) {
             displayMenu();
-            int choice = getNumericChoice(1, currentUser.isAdmin() ? 9 : 8);
+            int choice = getNumericChoice(1, currentUser.isAdmin() ? 10 : 9);
             switch (choice) {
                 case 1:
                     searchFlights();
@@ -65,6 +65,9 @@ public class FlightBookingApp {
                     viewLoyaltyPoints();
                     break;
                 case 8:
+                    selectChangeSeats();
+                    break;
+                case 9:
                     if (currentUser.isAdmin()) {
                         showAdminPanel();
                     } else {
@@ -73,7 +76,7 @@ public class FlightBookingApp {
                         return;
                     }
                     break;
-                case 9: // Only available for admin users
+                case 10: // Only available for admin users
                     System.out.println(ConsoleColors.GREEN + "Thank you for using the system, " + 
                                        currentUser.getUsername() + "!" + ConsoleColors.RESET);
                     return;
@@ -151,12 +154,13 @@ public class FlightBookingApp {
         System.out.println("5. Cancel a Booking");
         System.out.println("6. Check Flight Status");
         System.out.println("7. View Loyalty Points");
+        System.out.println("8. Select/Change Seats");
         
         if (currentUser.isAdmin()) {
-            System.out.println("8. Admin Panel");
-            System.out.println("9. Exit");
+            System.out.println("9. Admin Panel");
+            System.out.println("10. Exit");
         } else {
-            System.out.println("8. Exit");
+            System.out.println("9. Exit");
         }
         
         System.out.print("Choose an option: ");
@@ -439,9 +443,17 @@ public class FlightBookingApp {
         System.out.println(ConsoleColors.CYAN + "Booking Flight: " + flight.getFlightNumber() + 
                            " from " + flight.getDeparture() + " to " + flight.getArrival() + ConsoleColors.RESET);
         
-        System.out.print("Select seat (window, aisle, middle): ");
-        String seat = scanner.nextLine();
-        BookingComponent bookingComponent = new ConcreteBooking(flight, currentPassenger.name, seat);
+        // Use seat map visualizer to select a seat
+        SeatMapVisualizer seatVisualizer = new SeatMapVisualizer(flight.getSeatMap());
+        System.out.println(ConsoleColors.CYAN + "Please select your seat:" + ConsoleColors.RESET);
+        String seatCode = seatVisualizer.selectSeat(scanner);
+        
+        if (seatCode == null) {
+            System.out.println(ConsoleColors.YELLOW + "Booking cancelled." + ConsoleColors.RESET);
+            return;
+        }
+        
+        BookingComponent bookingComponent = new ConcreteBooking(flight, currentPassenger.name, seatCode);
         Booking booking = new Booking(bookingComponent);
         
         // Process payment
@@ -451,6 +463,8 @@ public class FlightBookingApp {
             System.out.println(ConsoleColors.GREEN + "Booking created: " + booking.getDescription() + " - Cost: $" + booking.getCost() + ConsoleColors.RESET);
             System.out.println(ConsoleColors.GREEN + "You are now subscribed to updates for Flight " + flight.getFlightNumber() + ConsoleColors.RESET);
         } else {
+            // If payment fails, release the seat
+            flight.getSeatMap().releaseSeat(seatCode);
             System.out.println(ConsoleColors.RED + "Booking cancelled due to payment failure." + ConsoleColors.RESET);
         }
     }
@@ -642,9 +656,18 @@ public class FlightBookingApp {
             System.out.println(ConsoleColors.RED + "Flight not found." + ConsoleColors.RESET);
             return;
         }
-        System.out.print("Select seat (window, aisle, middle): ");
-        String seat = scanner.nextLine();
-        BookingComponent bookingComponent = new ConcreteBooking(flight, currentPassenger.name, seat);
+        
+        // Use seat map visualizer to select a seat
+        SeatMapVisualizer seatVisualizer = new SeatMapVisualizer(flight.getSeatMap());
+        System.out.println(ConsoleColors.CYAN + "Please select your seat:" + ConsoleColors.RESET);
+        String seatCode = seatVisualizer.selectSeat(scanner);
+        
+        if (seatCode == null) {
+            System.out.println(ConsoleColors.YELLOW + "Booking cancelled." + ConsoleColors.RESET);
+            return;
+        }
+        
+        BookingComponent bookingComponent = new ConcreteBooking(flight, currentPassenger.name, seatCode);
         Booking booking = new Booking(bookingComponent);
         
         // Process payment
@@ -654,6 +677,8 @@ public class FlightBookingApp {
             System.out.println(ConsoleColors.GREEN + "Booking created: " + booking.getDescription() + " - Cost: $" + booking.getCost() + ConsoleColors.RESET);
             System.out.println(ConsoleColors.GREEN + "You are now subscribed to updates for Flight " + flightNumber + ConsoleColors.RESET);
         } else {
+            // If payment fails, release the seat
+            flight.getSeatMap().releaseSeat(seatCode);
             System.out.println(ConsoleColors.RED + "Booking cancelled due to payment failure." + ConsoleColors.RESET);
         }
     }
@@ -994,6 +1019,81 @@ public class FlightBookingApp {
             
             System.out.println(ConsoleColors.YELLOW + "You need " + pointsToNextTier + 
                                " more points to reach " + nextTier + " tier." + ConsoleColors.RESET);
+        }
+    }
+
+    private static void selectChangeSeats() {
+        if (currentPassenger.getBookings().isEmpty()) {
+            System.out.println(ConsoleColors.YELLOW + "You have no bookings to change seats for." + ConsoleColors.RESET);
+            return;
+        }
+        
+        System.out.println(ConsoleColors.CYAN + "Select a booking to change seats:" + ConsoleColors.RESET);
+        for (int i = 0; i < currentPassenger.getBookings().size(); i++) {
+            Booking booking = currentPassenger.getBookings().get(i);
+            ConcreteBooking concreteBooking = null;
+            
+            // Get the concrete booking to access seat information
+            if (booking.bookingComponent instanceof ConcreteBooking) {
+                concreteBooking = (ConcreteBooking) booking.bookingComponent;
+            }
+            
+            String seatInfo = (concreteBooking != null) ? 
+                              " (Current seat: " + concreteBooking.getSeatCode() + ")" :
+                              " (Seat information not available)";
+                              
+            System.out.println((i + 1) + ". " + booking.getDescription() + seatInfo);
+        }
+        
+        System.out.print("Enter booking number or '0' to cancel: ");
+        int bookingChoice;
+        try {
+            bookingChoice = Integer.parseInt(scanner.nextLine());
+            if (bookingChoice == 0) {
+                return;
+            }
+        } catch (NumberFormatException e) {
+            System.out.println(ConsoleColors.RED + "Invalid input. Returning to main menu." + ConsoleColors.RESET);
+            return;
+        }
+        
+        if (bookingChoice < 1 || bookingChoice > currentPassenger.getBookings().size()) {
+            System.out.println(ConsoleColors.RED + "Invalid booking number." + ConsoleColors.RESET);
+            return;
+        }
+        
+        Booking selectedBooking = currentPassenger.getBookings().get(bookingChoice - 1);
+        
+        if (!(selectedBooking.bookingComponent instanceof ConcreteBooking)) {
+            System.out.println(ConsoleColors.RED + "Cannot change seat for this booking type." + ConsoleColors.RESET);
+            return;
+        }
+        
+        ConcreteBooking concreteBooking = (ConcreteBooking) selectedBooking.bookingComponent;
+        Flight flight = concreteBooking.getFlight();
+        
+        // Display current seat and flight information
+        System.out.println(ConsoleColors.CYAN + "Current booking information:" + ConsoleColors.RESET);
+        System.out.println("Flight: " + flight.getFlightNumber() + " from " + flight.getDeparture() + " to " + flight.getArrival());
+        System.out.println("Current seat: " + concreteBooking.getSeatCode());
+        
+        // Use seat map visualizer to select a new seat
+        SeatMapVisualizer seatVisualizer = new SeatMapVisualizer(flight.getSeatMap());
+        System.out.println(ConsoleColors.CYAN + "Please select your new seat:" + ConsoleColors.RESET);
+        String newSeatCode = seatVisualizer.selectSeat(scanner);
+        
+        if (newSeatCode == null) {
+            System.out.println(ConsoleColors.YELLOW + "Seat change cancelled." + ConsoleColors.RESET);
+            return;
+        }
+        
+        // Try to change the seat
+        if (concreteBooking.changeSeat(newSeatCode)) {
+            // Update the booking component with new seat information
+            selectedBooking.setBookingComponent(concreteBooking);
+            System.out.println(ConsoleColors.GREEN + "Seat changed successfully to " + newSeatCode + "." + ConsoleColors.RESET);
+        } else {
+            System.out.println(ConsoleColors.RED + "Failed to change seat. The seat may be occupied or invalid." + ConsoleColors.RESET);
         }
     }
 }
