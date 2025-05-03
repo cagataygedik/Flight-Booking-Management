@@ -1,7 +1,14 @@
+package payment;
+
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.Random;
 import java.util.Scanner;
+
+
+
+import core.Booking;
+import ui.ConsoleColors;
 
 public class PaymentProcessor {
     private Scanner scanner;

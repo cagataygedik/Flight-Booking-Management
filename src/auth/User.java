@@ -1,7 +1,16 @@
+package auth;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.io.*;
 import java.nio.file.*;
+
+import java.io.Serializable;
+
+
+
+import core.Passenger;
+import ui.ConsoleColors;
 
 public class User implements Serializable {
     private static final long serialVersionUID = 1L;

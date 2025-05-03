@@ -1,10 +1,14 @@
+package core;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import patterns.observer.Observable;
+import patterns.observer.Observer;
 
-class Flight implements Observable {
+public class Flight implements Observable {
     private String flightNumber;
     private String departure;
     private String arrival;

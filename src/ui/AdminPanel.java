@@ -1,5 +1,15 @@
+package ui;
+
 import java.util.List;
 import java.util.Scanner;
+import java.util.InputMismatchException;
+
+
+
+
+
+import core.Flight;
+import data.FlightDatabase;
 
 public class AdminPanel {
     private final FlightDatabase flightDb;
@@ -155,7 +165,7 @@ public class AdminPanel {
                 } else {
                     System.out.println(ConsoleColors.RED + "Please enter a number between " + min + " and " + max + "." + ConsoleColors.RESET);
                 }
-            } catch (Exception e) {
+            } catch (InputMismatchException e) {
                 System.out.println(ConsoleColors.RED + "Invalid input. Please enter a number." + ConsoleColors.RESET);
                 scanner.nextLine(); // Consume invalid input
             }

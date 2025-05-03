@@ -1,4 +1,8 @@
-class InsuranceDecorator extends ServiceDecorator {
+package patterns.decorator;
+
+import core.BookingComponent;
+
+public class InsuranceDecorator extends ServiceDecorator {
     public InsuranceDecorator(BookingComponent booking) {
         super(booking);
     }

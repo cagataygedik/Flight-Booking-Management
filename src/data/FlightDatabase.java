@@ -1,3 +1,5 @@
+package data;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -13,7 +15,10 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-class FlightDatabase {
+import core.Flight;
+import ui.ConsoleColors;
+
+public class FlightDatabase {
     private List<Flight> flights = new ArrayList<>();
     private static final String CSV_FILE_PATH = "data/data.csv";
 

@@ -1,10 +1,14 @@
+package core;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.io.Serializable;
+import patterns.observer.Observer;
+import ui.ConsoleColors;
 
-class Passenger implements Observer, Serializable {
+public class Passenger implements Observer, Serializable {
     private static final long serialVersionUID = 1L;
-    String name;
+    public String name;
     private transient List<Flight> subscribedFlights = new ArrayList<>(); // transient as Flight may not be serializable
     private List<Booking> bookings = new ArrayList<>();
     private int loyaltyPoints = 0;

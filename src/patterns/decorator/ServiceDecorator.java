@@ -1,4 +1,9 @@
-abstract class ServiceDecorator implements BookingComponent {
+package patterns.decorator;
+
+import core.BookingComponent;
+import core.Flight;
+
+public abstract class ServiceDecorator implements BookingComponent {
     protected BookingComponent booking;
 
     public ServiceDecorator(BookingComponent booking) {
@@ -9,5 +14,4 @@ abstract class ServiceDecorator implements BookingComponent {
     public Flight getFlight() {
         return booking.getFlight();
     }
-
 }

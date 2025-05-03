@@ -1,4 +1,6 @@
-class ConcreteBooking implements BookingComponent {
+package core;
+
+public class ConcreteBooking implements BookingComponent {
     private Flight flight;
     private String passengerName;
     private String seat;

@@ -1,4 +1,8 @@
-class PriorityBoardingDecorator extends ServiceDecorator {
+package patterns.decorator;
+
+import core.BookingComponent;
+
+public class PriorityBoardingDecorator extends ServiceDecorator {
     public PriorityBoardingDecorator(BookingComponent booking) {
         super(booking);
     }

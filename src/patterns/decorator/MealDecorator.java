@@ -1,4 +1,8 @@
-class MealDecorator extends ServiceDecorator {
+package patterns.decorator;
+
+import core.BookingComponent;
+
+public class MealDecorator extends ServiceDecorator {
     public MealDecorator(BookingComponent booking) {
         super(booking);
     }

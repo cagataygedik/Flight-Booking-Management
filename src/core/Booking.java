@@ -1,8 +1,11 @@
-import java.io.Serializable;
+package core;
 
-class Booking implements Serializable {
+import java.io.Serializable;
+import data.FlightDatabase;
+
+public class Booking implements Serializable {
     private static final long serialVersionUID = 1L;
-    transient BookingComponent bookingComponent; // transient because we'll store the details separately
+    public transient BookingComponent bookingComponent; // transient because we'll store the details separately
     
     // These fields will be used for serialization
     private String description;
