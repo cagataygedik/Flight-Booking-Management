@@ -410,6 +410,10 @@ public class Main {
                         currentStep = SearchStep.EXIT;
                     }
                     break;
+                    
+                case EXIT:
+                    // Exit the search flow and return to main menu
+                    break;
             }
         }
     }

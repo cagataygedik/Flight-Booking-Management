@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 
 class FlightDatabase {
     private List<Flight> flights = new ArrayList<>();
-    private static final String CSV_FILE_PATH = "Flight-Booking-Management/data/data.csv";
+    private static final String CSV_FILE_PATH = "data/data.csv";
 
     public FlightDatabase() {
         loadFlightsFromCSV();
