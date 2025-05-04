@@ -1039,30 +1039,52 @@ public class FlightBookingApp {
             }
             
             String seatInfo = (concreteBooking != null) ? 
-                              " (Current seat: " + concreteBooking.getSeatCode() + ")" :
-                              " (Seat information not available)";
+                            " (Current seat: " + concreteBooking.getSeatCode() + ")" :
+                            " (Seat information not available)";
+                            
+            Flight flight = booking.getFlight();
+            String flightInfo = (flight != null) ? 
+                              " [Flight " + flight.getFlightNumber() + "]" :
+                              "";
                               
-            System.out.println((i + 1) + ". " + booking.getDescription() + seatInfo);
+            System.out.println((i + 1) + ". " + booking.getDescription() + seatInfo + flightInfo);
         }
         
-        System.out.print("Enter booking number or '0' to cancel: ");
-        int bookingChoice;
+        System.out.println(ConsoleColors.YELLOW + "Enter booking number, flight number, or '0' to cancel:" + ConsoleColors.RESET);
+        System.out.print("Your choice: ");
+        String input = scanner.nextLine().trim();
+        
+        if (input.equals("0")) {
+            System.out.println(ConsoleColors.YELLOW + "Returning to main menu." + ConsoleColors.RESET);
+            return;
+        }
+        
+        Booking selectedBooking = null;
+        
+        // First try to parse as a numeric index
         try {
-            bookingChoice = Integer.parseInt(scanner.nextLine());
-            if (bookingChoice == 0) {
+            int bookingChoice = Integer.parseInt(input);
+            if (bookingChoice >= 1 && bookingChoice <= currentPassenger.getBookings().size()) {
+                selectedBooking = currentPassenger.getBookings().get(bookingChoice - 1);
+            } else {
+                System.out.println(ConsoleColors.RED + "Invalid booking number." + ConsoleColors.RESET);
                 return;
             }
         } catch (NumberFormatException e) {
-            System.out.println(ConsoleColors.RED + "Invalid input. Returning to main menu." + ConsoleColors.RESET);
-            return;
+            // If not a number, search by flight number
+            for (Booking booking : currentPassenger.getBookings()) {
+                if (booking.getFlight() != null && 
+                    booking.getFlight().getFlightNumber().equalsIgnoreCase(input)) {
+                    selectedBooking = booking;
+                    break;
+                }
+            }
+            
+            if (selectedBooking == null) {
+                System.out.println(ConsoleColors.RED + "No booking found for flight number: " + input + ConsoleColors.RESET);
+                return;
+            }
         }
-        
-        if (bookingChoice < 1 || bookingChoice > currentPassenger.getBookings().size()) {
-            System.out.println(ConsoleColors.RED + "Invalid booking number." + ConsoleColors.RESET);
-            return;
-        }
-        
-        Booking selectedBooking = currentPassenger.getBookings().get(bookingChoice - 1);
         
         if (!(selectedBooking.bookingComponent instanceof ConcreteBooking)) {
             System.out.println(ConsoleColors.RED + "Cannot change seat for this booking type." + ConsoleColors.RESET);

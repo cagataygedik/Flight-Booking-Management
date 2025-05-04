@@ -3,6 +3,7 @@ package data;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
@@ -20,21 +21,67 @@ import ui.ConsoleColors;
 
 public class FlightDatabase {
     private List<Flight> flights = new ArrayList<>();
-    private static final String CSV_FILE_PATH = "data/data.csv";
+    private static final String CSV_FILE_NAME = "data.csv";
 
     public FlightDatabase() {
         loadFlightsFromCSV();
     }
 
     private void loadFlightsFromCSV() {
-        Path path = Paths.get(CSV_FILE_PATH);
+        // Try multiple potential locations for the data file
+        List<Path> potentialPaths = new ArrayList<>();
+        
+        // 1. Try relative to current directory
+        potentialPaths.add(Paths.get("data", CSV_FILE_NAME));
+        
+        // 2. Try relative to Flight-Booking-Management directory
+        potentialPaths.add(Paths.get("Flight-Booking-Management", "data", CSV_FILE_NAME));
+        
+        // 3. Try with absolute path to the project
+        potentialPaths.add(Paths.get(System.getProperty("user.dir"), "data", CSV_FILE_NAME));
+        potentialPaths.add(Paths.get(System.getProperty("user.dir"), "Flight-Booking-Management", "data", CSV_FILE_NAME));
+        
+        // 4. Try to search for the file in various parent directories
+        Path currentDir = Paths.get(System.getProperty("user.dir"));
+        Path searchPath = currentDir;
+        for (int i = 0; i < 3; i++) { // Look up to 3 levels up
+            searchPath = searchPath.getParent();
+            if (searchPath != null) {
+                potentialPaths.add(searchPath.resolve(Paths.get("data", CSV_FILE_NAME)));
+                potentialPaths.add(searchPath.resolve(Paths.get("Flight-Booking-Management", "data", CSV_FILE_NAME)));
+            }
+        }
+        
+        // Print the current working directory to help with debugging
+        System.out.println(ConsoleColors.YELLOW + "Current working directory: " + System.getProperty("user.dir") + ConsoleColors.RESET);
+        
+        // Try each path until we find one that exists
+        Path validPath = null;
+        for (Path path : potentialPaths) {
+            if (Files.exists(path)) {
+                validPath = path;
+                System.out.println(ConsoleColors.GREEN + "Found data file at: " + path.toAbsolutePath() + ConsoleColors.RESET);
+                break;
+            }
+        }
+        
+        if (validPath == null) {
+            System.err.println(ConsoleColors.RED + "Could not find the data file in any of the expected locations:" + ConsoleColors.RESET);
+            for (Path path : potentialPaths) {
+                System.err.println(ConsoleColors.RED + "  - " + path.toAbsolutePath() + ConsoleColors.RESET);
+            }
+            System.err.println(ConsoleColors.RED + "Please make sure the CSV file exists in one of these locations." + ConsoleColors.RESET);
+            return;
+        }
+        
+        // Now that we have a valid path, read the file
         DateTimeFormatter dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE;
         DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
 
-        try (BufferedReader br = new BufferedReader(new FileReader(path.toFile()))) {
+        try (BufferedReader br = new BufferedReader(new FileReader(validPath.toFile()))) {
             String line = br.readLine();
             if (line == null) {
-                System.err.println(ConsoleColors.RED + "CSV file is empty: " + path.toAbsolutePath() + ConsoleColors.RESET);
+                System.err.println(ConsoleColors.RED + "CSV file is empty: " + validPath.toAbsolutePath() + ConsoleColors.RESET);
                 return;
             }
 
@@ -59,13 +106,12 @@ public class FlightDatabase {
                      System.err.println(ConsoleColors.YELLOW + "Skipping malformed row (expected 8 columns): " + line + ConsoleColors.RESET);
                 }
             }
-             System.out.println(ConsoleColors.GREEN + "Loaded " + flights.size() + " flights from " + path.getFileName() + ConsoleColors.RESET);
+            System.out.println(ConsoleColors.GREEN + "Loaded " + flights.size() + " flights from " + validPath.getFileName() + ConsoleColors.RESET);
 
         } catch (IOException e) {
-            System.err.println(ConsoleColors.RED + "Error loading flights from CSV: " + path.toAbsolutePath() + " - " + e.getMessage() + ConsoleColors.RESET);
+            System.err.println(ConsoleColors.RED + "Error loading flights from CSV: " + validPath.toAbsolutePath() + " - " + e.getMessage() + ConsoleColors.RESET);
         }
     }
-
 
     public List<Flight> searchFlights(String departure, String arrival) {
         List<Flight> result = new ArrayList<>();
