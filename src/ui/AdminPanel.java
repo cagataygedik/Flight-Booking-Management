@@ -141,7 +141,7 @@ public class AdminPanel {
                 cancelledFlights++;
             }
             
-            // Assume each flight has 100 seats and 70% occupancy rate for revenue calculation
+            
             totalRevenue += flight.getPrice() * 70;
         }
         
@@ -159,7 +159,7 @@ public class AdminPanel {
             try {
                 System.out.print("Enter your choice (" + min + "-" + max + "): ");
                 int choice = scanner.nextInt();
-                scanner.nextLine(); // Consume newline
+                scanner.nextLine(); 
                 if (choice >= min && choice <= max) {
                     return choice;
                 } else {
@@ -167,7 +167,7 @@ public class AdminPanel {
                 }
             } catch (InputMismatchException e) {
                 System.out.println(ConsoleColors.RED + "Invalid input. Please enter a number." + ConsoleColors.RESET);
-                scanner.nextLine(); // Consume invalid input
+                scanner.nextLine(); 
             }
         }
     }

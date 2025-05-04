@@ -5,9 +5,9 @@ import data.FlightDatabase;
 
 public class Booking implements Serializable {
     private static final long serialVersionUID = 1L;
-    public transient BookingComponent bookingComponent; // transient because we'll store the details separately
+    public transient BookingComponent bookingComponent; 
     
-    // These fields will be used for serialization
+    
     private String description;
     private double cost;
     private String flightNumber;
@@ -20,7 +20,7 @@ public class Booking implements Serializable {
     }
     
     public double getCost() {
-        // If deserialized, use stored cost
+        
         if (bookingComponent == null) {
             return cost;
         }
@@ -28,7 +28,7 @@ public class Booking implements Serializable {
     }
     
     public String getDescription() {
-        // If deserialized, use stored description
+        
         if (bookingComponent == null) {
             return description;
         }
@@ -36,7 +36,7 @@ public class Booking implements Serializable {
     }
     
     public Flight getFlight() {
-        // If deserialized, we need to look up the flight from the database
+        
         if (bookingComponent == null) {
             FlightDatabase db = new FlightDatabase();
             return db.getFlightByNumber(flightNumber);
@@ -44,7 +44,7 @@ public class Booking implements Serializable {
         return bookingComponent.getFlight();
     }
     
-    // When booking component is modified, update the serializable fields
+    
     public void setBookingComponent(BookingComponent component) {
         this.bookingComponent = component;
         this.description = component.getDescription();

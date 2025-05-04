@@ -15,17 +15,11 @@ public class PaymentProcessor {
         this.scanner = scanner;
     }
     
-    /**
-     * Process payment for a standard booking
-     * @param amount Amount to pay
-     * @param booking Booking object
-     * @return true if payment was successful
-     */
     public boolean processPayment(double amount, Booking booking) {
         System.out.println(ConsoleColors.CYAN + "\n--- Payment Processing ---" + ConsoleColors.RESET);
         System.out.println("Total amount to pay: $" + String.format("%.2f", amount));
         
-        // Payment method selection
+        
         System.out.println("\nSelect payment method:");
         System.out.println("1. Credit Card");
         System.out.println("2. PayPal");
@@ -35,10 +29,10 @@ public class PaymentProcessor {
         int paymentMethodChoice;
         try {
             paymentMethodChoice = scanner.nextInt();
-            scanner.nextLine(); // Consume newline
+            scanner.nextLine(); 
         } catch (Exception e) {
             System.out.println(ConsoleColors.RED + "Invalid input. Defaulting to Credit Card." + ConsoleColors.RESET);
-            scanner.nextLine(); // Consume invalid input
+            scanner.nextLine(); 
             paymentMethodChoice = 1;
         }
         
@@ -51,7 +45,7 @@ public class PaymentProcessor {
         
         System.out.println("Selected payment method: " + paymentMethod);
         
-        // For credit card, collect details
+        
         if (paymentMethod.equals("Credit Card")) {
             if (!collectCreditCardDetails()) {
                 return false;
@@ -60,23 +54,23 @@ public class PaymentProcessor {
             if (!collectPayPalDetails()) {
                 return false;
             }
-        } else { // Bank Transfer
+        } else { 
             if (!collectBankDetails()) {
                 return false;
             }
         }
         
-        // Process payment
+        
         System.out.println(ConsoleColors.YELLOW + "Processing payment..." + ConsoleColors.RESET);
         
-        // Simulate payment processing delay
+        
         try {
             Thread.sleep(1500);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
         
-        // Generate a random success (90% chance of success)
+        
         boolean success = new Random().nextInt(100) < 90;
         
         if (success) {
@@ -94,17 +88,11 @@ public class PaymentProcessor {
         }
     }
     
-    /**
-     * Process payment for a group booking
-     * @param amount Amount to pay
-     * @param description Description of what the payment is for
-     * @return true if payment was successful
-     */
     public boolean processPayment(double amount, String description) {
         System.out.println(ConsoleColors.CYAN + "\n--- Payment Processing ---" + ConsoleColors.RESET);
         System.out.println("Total amount to pay: $" + String.format("%.2f", amount));
         
-        // Payment method selection
+        
         System.out.println("\nSelect payment method:");
         System.out.println("1. Credit Card");
         System.out.println("2. PayPal");
@@ -114,10 +102,10 @@ public class PaymentProcessor {
         int paymentMethodChoice;
         try {
             paymentMethodChoice = scanner.nextInt();
-            scanner.nextLine(); // Consume newline
+            scanner.nextLine(); 
         } catch (Exception e) {
             System.out.println(ConsoleColors.RED + "Invalid input. Defaulting to Credit Card." + ConsoleColors.RESET);
-            scanner.nextLine(); // Consume invalid input
+            scanner.nextLine(); 
             paymentMethodChoice = 1;
         }
         
@@ -130,7 +118,7 @@ public class PaymentProcessor {
         
         System.out.println("Selected payment method: " + paymentMethod);
         
-        // For credit card, collect details
+        
         if (paymentMethod.equals("Credit Card")) {
             if (!collectCreditCardDetails()) {
                 return false;
@@ -139,23 +127,23 @@ public class PaymentProcessor {
             if (!collectPayPalDetails()) {
                 return false;
             }
-        } else { // Bank Transfer
+        } else { 
             if (!collectBankDetails()) {
                 return false;
             }
         }
         
-        // Process payment
+        
         System.out.println(ConsoleColors.YELLOW + "Processing payment..." + ConsoleColors.RESET);
         
-        // Simulate payment processing delay
+        
         try {
             Thread.sleep(1500);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
         
-        // Generate a random success (90% chance of success)
+        
         boolean success = new Random().nextInt(100) < 90;
         
         if (success) {
@@ -190,11 +178,11 @@ public class PaymentProcessor {
             return false;
         }
         
-        // Check if card is expired
+        
         try {
             String[] parts = expDate.split("/");
             int month = Integer.parseInt(parts[0]);
-            int year = Integer.parseInt(parts[1]) + 2000; // Convert to 4-digit year
+            int year = Integer.parseInt(parts[1]) + 2000; 
             
             LocalDate expiryDate = LocalDate.of(year, month, 1).plusMonths(1).minusDays(1);
             if (expiryDate.isBefore(LocalDate.now())) {
@@ -266,7 +254,7 @@ public class PaymentProcessor {
     }
     
     private String generateReceiptNumber() {
-        // Generate a random receipt number
+        
         Random random = new Random();
         StringBuilder receiptBuilder = new StringBuilder("RCT-");
         for (int i = 0; i < 8; i++) {

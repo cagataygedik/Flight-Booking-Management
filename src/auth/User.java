@@ -7,8 +7,6 @@ import java.nio.file.*;
 
 import java.io.Serializable;
 
-
-
 import core.Passenger;
 import ui.ConsoleColors;
 
@@ -22,20 +20,15 @@ public class User implements Serializable {
     private static final String USERS_FILE = "data/users.dat";
     
     static {
-        // Try to load existing users from file
         loadUsers();
         
-        // If no users were loaded, add default users
         if (users.isEmpty()) {
-            // Add a default admin user
             User admin = new User("admin", "admin123", "Admin", true);
             users.add(admin);
             
-            // Add some sample users
             users.add(new User("john", "pass123", "John Smith", false));
             users.add(new User("mary", "pass456", "Mary Johnson", false));
             
-            // Save the default users
             saveUsers();
         }
     }
@@ -57,7 +50,6 @@ public class User implements Serializable {
     }
     
     public static void register(String username, String password, String passengerName) {
-        // Check if username already exists
         for (User user : users) {
             if (user.username.equals(username)) {
                 throw new IllegalArgumentException("Username already exists");
@@ -71,10 +63,8 @@ public class User implements Serializable {
     
     private static void saveUsers() {
         try {
-            // Ensure the directory exists
             Files.createDirectories(Paths.get("data"));
             
-            // Save users to file
             try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(USERS_FILE))) {
                 oos.writeObject(users);
                 System.out.println(ConsoleColors.GREEN + "Users saved successfully." + ConsoleColors.RESET);
@@ -97,7 +87,6 @@ public class User implements Serializable {
             System.out.println(ConsoleColors.GREEN + "Loaded " + users.size() + " users." + ConsoleColors.RESET);
         } catch (IOException | ClassNotFoundException e) {
             System.err.println(ConsoleColors.RED + "Error loading users: " + e.getMessage() + ConsoleColors.RESET);
-            // If loading fails, start with an empty list
             users = new ArrayList<>();
         }
     }

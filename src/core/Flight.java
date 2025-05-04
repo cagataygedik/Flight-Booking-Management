@@ -46,7 +46,7 @@ public class Flight implements Observable, Serializable {
         this.discountPercentage = discountPercentage;
         this.price = newPrice;
         
-        // Notify observers about the special offer
+        
         String message = String.format("Special offer for Flight %s: %d%% discount! New price: $%.2f", 
                                       flightNumber, discountPercentage, newPrice);
         for (Observer o : observers) {

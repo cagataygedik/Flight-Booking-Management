@@ -28,23 +28,23 @@ public class FlightDatabase {
     }
 
     private void loadFlightsFromCSV() {
-        // Try multiple potential locations for the data file
+        
         List<Path> potentialPaths = new ArrayList<>();
         
-        // 1. Try relative to current directory
+        
         potentialPaths.add(Paths.get("data", CSV_FILE_NAME));
         
-        // 2. Try relative to Flight-Booking-Management directory
+        
         potentialPaths.add(Paths.get("Flight-Booking-Management", "data", CSV_FILE_NAME));
         
-        // 3. Try with absolute path to the project
+        
         potentialPaths.add(Paths.get(System.getProperty("user.dir"), "data", CSV_FILE_NAME));
         potentialPaths.add(Paths.get(System.getProperty("user.dir"), "Flight-Booking-Management", "data", CSV_FILE_NAME));
         
-        // 4. Try to search for the file in various parent directories
+        
         Path currentDir = Paths.get(System.getProperty("user.dir"));
         Path searchPath = currentDir;
-        for (int i = 0; i < 3; i++) { // Look up to 3 levels up
+        for (int i = 0; i < 3; i++) { 
             searchPath = searchPath.getParent();
             if (searchPath != null) {
                 potentialPaths.add(searchPath.resolve(Paths.get("data", CSV_FILE_NAME)));
@@ -52,10 +52,10 @@ public class FlightDatabase {
             }
         }
         
-        // Print the current working directory to help with debugging
+        
         System.out.println(ConsoleColors.YELLOW + "Current working directory: " + System.getProperty("user.dir") + ConsoleColors.RESET);
         
-        // Try each path until we find one that exists
+        
         Path validPath = null;
         for (Path path : potentialPaths) {
             if (Files.exists(path)) {
@@ -74,7 +74,7 @@ public class FlightDatabase {
             return;
         }
         
-        // Now that we have a valid path, read the file
+        
         DateTimeFormatter dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE;
         DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
 
@@ -140,35 +140,22 @@ public class FlightDatabase {
         }
         return false;
     }
-    /**
-     * Gets a sorted list of unique departure city codes.
-     * @return List of unique departure cities.
-     */
     public List<String> getAvailableDepartures() {
-        Set<String> departures = new TreeSet<>(); // Use TreeSet for automatic sorting and uniqueness
+        Set<String> departures = new TreeSet<>(); 
         for (Flight flight : flights) {
             departures.add(flight.getDeparture());
         }
         return new ArrayList<>(departures);
     }
 
-    /**
-     * Gets a sorted list of unique arrival city codes.
-     * @return List of unique arrival cities.
-     */
     public List<String> getAvailableArrivals() {
-        Set<String> arrivals = new TreeSet<>(); // Use TreeSet for automatic sorting and uniqueness
+        Set<String> arrivals = new TreeSet<>(); 
         for (Flight flight : flights) {
             arrivals.add(flight.getArrival());
         }
         return new ArrayList<>(arrivals);
     }
 
-    /**
-     * Gets a sorted list of unique arrival city codes available from a specific departure city.
-     * @param departureCity The departure city code.
-     * @return List of unique arrival cities from the given departure.
-     */
     public List<String> getAvailableArrivalsFrom(String departureCity) {
         return flights.stream()
                       .filter(f -> f.getDeparture().equalsIgnoreCase(departureCity))
@@ -178,24 +165,14 @@ public class FlightDatabase {
                       .collect(Collectors.toList());
     }
     
-    /**
-     * Gets a list of airlines available in the database.
-     * @return List of unique airlines.
-     */
     public List<String> getAvailableAirlines() {
-        Set<String> airlines = new TreeSet<>(); // Use TreeSet for automatic sorting and uniqueness
+        Set<String> airlines = new TreeSet<>(); 
         for (Flight flight : flights) {
             airlines.add(flight.getAirline());
         }
         return new ArrayList<>(airlines);
     }
     
-    /**
-     * Gets flights between a date range.
-     * @param startDate The start date (inclusive).
-     * @param endDate The end date (inclusive).
-     * @return List of flights departing within the date range.
-     */
     public List<Flight> getFlightsByDateRange(LocalDate startDate, LocalDate endDate) {
         List<Flight> results = new ArrayList<>();
         for (Flight flight : flights) {
@@ -208,11 +185,6 @@ public class FlightDatabase {
         return results;
     }
     
-    /**
-     * Gets flights with a price less than or equal to the maximum price.
-     * @param maxPrice The maximum price.
-     * @return List of flights with price <= maxPrice.
-     */
     public List<Flight> getFlightsByMaxPrice(double maxPrice) {
         List<Flight> results = new ArrayList<>();
         for (Flight flight : flights) {
@@ -223,11 +195,6 @@ public class FlightDatabase {
         return results;
     }
     
-    /**
-     * Gets flights for a specific airline.
-     * @param airline The airline name.
-     * @return List of flights operated by the airline.
-     */
     public List<Flight> getFlightsByAirline(String airline) {
         List<Flight> results = new ArrayList<>();
         for (Flight flight : flights) {
@@ -238,11 +205,6 @@ public class FlightDatabase {
         return results;
     }
     
-    /**
-     * Gets flights with a duration less than or equal to the maximum duration.
-     * @param maxDuration The maximum duration in hours.
-     * @return List of flights with duration <= maxDuration.
-     */
     public List<Flight> getFlightsByMaxDuration(double maxDuration) {
         List<Flight> results = new ArrayList<>();
         for (Flight flight : flights) {
@@ -253,10 +215,6 @@ public class FlightDatabase {
         return results;
     }
     
-    /**
-     * Gets all flights in the database.
-     * @return List of all flights.
-     */
     public List<Flight> getAllFlights() {
         return new ArrayList<>(flights);
     }

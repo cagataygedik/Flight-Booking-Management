@@ -23,4 +23,6 @@ data/group_bookings.dat
 
 # Operating System files
 .DS_Store
-Thumbs.db
+Thumbs.dbbin/
+sources.txt
+data/users.dat

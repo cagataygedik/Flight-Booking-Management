@@ -9,7 +9,7 @@ import ui.ConsoleColors;
 public class Passenger implements Observer, Serializable {
     private static final long serialVersionUID = 1L;
     public String name;
-    private transient List<Flight> subscribedFlights = new ArrayList<>(); // transient as Flight may not be serializable
+    private transient List<Flight> subscribedFlights = new ArrayList<>(); 
     private List<Booking> bookings = new ArrayList<>();
     private int loyaltyPoints = 0;
 
@@ -18,7 +18,7 @@ public class Passenger implements Observer, Serializable {
     }
 
     public void subscribeToFlight(Flight flight) {
-        // Initialize subscribedFlights if null (happens after deserialization)
+        
         if (subscribedFlights == null) {
             subscribedFlights = new ArrayList<>();
         }
@@ -27,10 +27,10 @@ public class Passenger implements Observer, Serializable {
     }
 
     public void unsubscribeFromFlight(Flight flight) {
-        // Initialize subscribedFlights if null (happens after deserialization)
+        
         if (subscribedFlights == null) {
             subscribedFlights = new ArrayList<>();
-            return; // Nothing to remove if it was null
+            return; 
         }
         flight.removeObserver(this);
         subscribedFlights.remove(flight);
@@ -38,7 +38,7 @@ public class Passenger implements Observer, Serializable {
 
     public void addBooking(Booking booking) {
         bookings.add(booking);
-        loyaltyPoints += (int) (booking.getCost() / 10); // Earn 1 point per $10 spent
+        loyaltyPoints += (int) (booking.getCost() / 10); 
     }
 
     public void addLoyaltyPoints(int points) {
@@ -50,17 +50,11 @@ public class Passenger implements Observer, Serializable {
         unsubscribeFromFlight(booking.getFlight());
     }
 
-    /**
-     * Cancels a passenger's participation in a group booking.
-     * 
-     * @param groupBooking The group booking to cancel from
-     * @return true if passenger was removed from the group booking successfully
-     */
     public boolean cancelGroupBooking(GroupBooking groupBooking) {
-        // Remove the passenger from the group booking
+        
         boolean removed = groupBooking.removePassenger(this);
         
-        // Unsubscribe from the flight
+        
         if (removed) {
             unsubscribeFromFlight(groupBooking.getFlight());
         }

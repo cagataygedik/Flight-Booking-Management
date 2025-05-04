@@ -3,9 +3,6 @@ package ui;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Created a new utility class for formatting tables in the console.
- */
 public class TableFormatter {
     
     private List<String[]> rows = new ArrayList<>();
@@ -17,7 +14,7 @@ public class TableFormatter {
         this.headers = headers;
         this.columnWidths = new int[headers.length];
         
-        // Initialize columnWidths based on headers
+        
         for (int i = 0; i < headers.length; i++) {
             columnWidths[i] = headers[i].length();
         }
@@ -27,7 +24,7 @@ public class TableFormatter {
         String[] row = new String[headers.length];
         for (int i = 0; i < Math.min(values.length, headers.length); i++) {
             row[i] = values[i];
-            // Update column width if this value is wider
+            
             if (values[i].length() > columnWidths[i]) {
                 columnWidths[i] = values[i].length();
             }
@@ -47,10 +44,10 @@ public class TableFormatter {
         StringBuilder result = new StringBuilder();
         String line = createLine();
         
-        // Add top line
+        
         result.append(line).append("\n");
         
-        // Add header
+        
         result.append("| ");
         for (int i = 0; i < headers.length; i++) {
             String header = headers[i];
@@ -64,10 +61,10 @@ public class TableFormatter {
         }
         result.append("\n");
         
-        // Add separator line
+        
         result.append(line).append("\n");
         
-        // Add rows
+        
         for (String[] row : rows) {
             result.append("| ");
             for (int i = 0; i < headers.length; i++) {
@@ -78,7 +75,7 @@ public class TableFormatter {
             result.append("\n");
         }
         
-        // Add bottom line
+        
         result.append(line);
         
         return result.toString();

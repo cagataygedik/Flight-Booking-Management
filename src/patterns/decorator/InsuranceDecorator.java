@@ -3,6 +3,8 @@ package patterns.decorator;
 import core.BookingComponent;
 
 public class InsuranceDecorator extends ServiceDecorator {
+    private static final long serialVersionUID = 1L;
+    
     public InsuranceDecorator(BookingComponent booking) {
         super(booking);
     }
