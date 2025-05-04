@@ -1,5 +1,6 @@
 package core;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.time.LocalDate;
@@ -8,7 +9,8 @@ import java.time.format.DateTimeFormatter;
 import patterns.observer.Observable;
 import patterns.observer.Observer;
 
-public class Flight implements Observable {
+public class Flight implements Observable, Serializable {
+    private static final long serialVersionUID = 1L;
     private String flightNumber;
     private String departure;
     private String arrival;
@@ -20,7 +22,7 @@ public class Flight implements Observable {
     private double originalPrice;
     private int discountPercentage;
     private String status;
-    private List<Observer> observers = new ArrayList<>();
+    private transient List<Observer> observers = new ArrayList<>();
     private SeatMap seatMap;
 
 

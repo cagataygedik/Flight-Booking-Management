@@ -8,6 +8,7 @@ import java.util.Comparator;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Map;
 
 import auth.User;
 import core.Booking;
@@ -41,7 +42,7 @@ public class FlightBookingApp {
 
         while (true) {
             displayMenu();
-            int choice = getNumericChoice(1, currentUser.isAdmin() ? 10 : 9);
+            int choice = getNumericChoice(1, currentUser.isAdmin() ? 11 : 10);
             switch (choice) {
                 case 1:
                     searchFlights();
@@ -50,35 +51,38 @@ public class FlightBookingApp {
                     bookFlight();
                     break;
                 case 3:
-                    customizeBooking();
+                    createGroupBooking();
                     break;
                 case 4:
-                    viewBookings();
+                    customizeBooking();
                     break;
                 case 5:
-                    cancelBooking();
+                    viewBookings();
                     break;
                 case 6:
-                    checkFlightStatus();
+                    cancelBooking();
                     break;
                 case 7:
-                    viewLoyaltyPoints();
+                    checkFlightStatus();
                     break;
                 case 8:
-                    selectChangeSeats();
+                    viewLoyaltyPoints();
                     break;
                 case 9:
+                    selectChangeSeats();
+                    break;
+                case 10:
                     if (currentUser.isAdmin()) {
                         showAdminPanel();
                     } else {
                         System.out.println(ConsoleColors.GREEN + "Thank you for using the system, " + 
-                                           currentUser.getUsername() + "!" + ConsoleColors.RESET);
+                                         currentUser.getUsername() + "!" + ConsoleColors.RESET);
                         return;
                     }
                     break;
-                case 10: // Only available for admin users
+                case 11: // Only available for admin users
                     System.out.println(ConsoleColors.GREEN + "Thank you for using the system, " + 
-                                       currentUser.getUsername() + "!" + ConsoleColors.RESET);
+                                     currentUser.getUsername() + "!" + ConsoleColors.RESET);
                     return;
                 default:
                     System.out.println(ConsoleColors.RED + "Invalid choice. Please try again." + ConsoleColors.RESET);
@@ -149,18 +153,19 @@ public class FlightBookingApp {
         System.out.println(ConsoleColors.CYAN + "\n--- Menu ---" + ConsoleColors.RESET);
         System.out.println("1. Search for Flights");
         System.out.println("2. Book a Flight");
-        System.out.println("3. Customize Booking");
-        System.out.println("4. View My Bookings");
-        System.out.println("5. Cancel a Booking");
-        System.out.println("6. Check Flight Status");
-        System.out.println("7. View Loyalty Points");
-        System.out.println("8. Select/Change Seats");
+        System.out.println("3. Create Group Booking");
+        System.out.println("4. Customize Booking");
+        System.out.println("5. View My Bookings");
+        System.out.println("6. Cancel a Booking");
+        System.out.println("7. Check Flight Status");
+        System.out.println("8. View Loyalty Points");
+        System.out.println("9. Select/Change Seats");
         
         if (currentUser.isAdmin()) {
-            System.out.println("9. Admin Panel");
-            System.out.println("10. Exit");
+            System.out.println("10. Admin Panel");
+            System.out.println("11. Exit");
         } else {
-            System.out.println("9. Exit");
+            System.out.println("10. Exit");
         }
         
         System.out.print("Choose an option: ");
@@ -866,238 +871,287 @@ public class FlightBookingApp {
     }
 
     private static void viewBookings() {
-        if (currentPassenger.getBookings().isEmpty()) {
-            System.out.println(ConsoleColors.YELLOW + "You have no bookings." + ConsoleColors.RESET);
+        System.out.println(ConsoleColors.CYAN + "\n--- My Bookings ---" + ConsoleColors.RESET);
+        
+        // Display individual bookings
+        System.out.println(ConsoleColors.YELLOW + "\nIndividual Bookings:" + ConsoleColors.RESET);
+        List<Booking> userBookings = currentPassenger.getBookings();
+        
+        if (userBookings.isEmpty()) {
+            System.out.println("You have no individual bookings.");
         } else {
-            System.out.println(ConsoleColors.CYAN + "Your Bookings:" + ConsoleColors.RESET);
-            for (Booking booking : currentPassenger.getBookings()) {
-                System.out.println(booking.getDescription() + " - Cost: $" + booking.getCost());
+            for (int i = 0; i < userBookings.size(); i++) {
+                Booking booking = userBookings.get(i);
+                Flight flight = booking.getFlight();
+                
+                System.out.println((i+1) + ". " + booking.getDescription());
+                System.out.println("   Price: $" + String.format("%.2f", booking.getCost()));
+                System.out.println("   Flight Status: " + getColoredStatus(flight.getStatus()));
+                System.out.println();
             }
         }
+        
+        // Display group bookings
+        System.out.println(ConsoleColors.YELLOW + "\nGroup Bookings:" + ConsoleColors.RESET);
+        data.GroupBookingDatabase groupDb = new data.GroupBookingDatabase();
+        List<core.GroupBooking> groupBookings = groupDb.getGroupBookingsForPassenger(currentPassenger);
+        
+        if (groupBookings.isEmpty()) {
+            System.out.println("You have no group bookings.");
+        } else {
+            for (int i = 0; i < groupBookings.size(); i++) {
+                core.GroupBooking groupBooking = groupBookings.get(i);
+                Flight flight = groupBooking.getFlight();
+                
+                System.out.println((i+1) + ". Group ID: " + groupBooking.getGroupId());
+                System.out.println("   Flight: " + flight.getFlightNumber() + 
+                                  " (" + flight.getDeparture() + " to " + flight.getArrival() + ")");
+                System.out.println("   Date: " + flight.getDepartureDate());
+                System.out.println("   Passengers: " + groupBooking.getPassengerCount());
+                System.out.println("   Total Cost: $" + String.format("%.2f", groupBooking.getTotalCost()));
+                System.out.println("   Flight Status: " + getColoredStatus(flight.getStatus()));
+                System.out.println("   Contact: " + groupBooking.getContactName());
+                
+                // Display seat assignments
+                System.out.println(ConsoleColors.CYAN + "   Seat Assignments:" + ConsoleColors.RESET);
+                Map<Passenger, String> seatAssignments = groupBooking.getAllSeatAssignments();
+                for (Passenger passenger : groupBooking.getPassengers()) {
+                    String seat = seatAssignments.get(passenger);
+                    String seatInfo = seat != null ? seat : "Not assigned";
+                    System.out.println("   • " + passenger.name + ": " + seatInfo);
+                }
+                
+                System.out.println();
+            }
+        }
+        
+        System.out.println("\nPress Enter to continue...");
+        scanner.nextLine();
     }
 
     private static void cancelBooking() {
-        if (currentPassenger.getBookings().isEmpty()) {
-            System.out.println(ConsoleColors.YELLOW + "You have no bookings to cancel." + ConsoleColors.RESET);
+        System.out.println(ConsoleColors.CYAN + "\n--- Cancel Booking ---" + ConsoleColors.RESET);
+        
+        // First, display all individual bookings
+        System.out.println(ConsoleColors.YELLOW + "Individual Bookings:" + ConsoleColors.RESET);
+        List<Booking> userBookings = currentPassenger.getBookings();
+        
+        if (userBookings.isEmpty()) {
+            System.out.println("You have no individual bookings to cancel.");
+        } else {
+            for (int i = 0; i < userBookings.size(); i++) {
+                Booking booking = userBookings.get(i);
+                System.out.println((i+1) + ". " + booking.getDescription());
+            }
+        }
+        
+        // Next, display all group bookings
+        System.out.println(ConsoleColors.YELLOW + "\nGroup Bookings:" + ConsoleColors.RESET);
+        data.GroupBookingDatabase groupDb = new data.GroupBookingDatabase();
+        List<core.GroupBooking> groupBookings = groupDb.getGroupBookingsForPassenger(currentPassenger);
+        
+        if (groupBookings.isEmpty()) {
+            System.out.println("You have no group bookings to cancel.");
+        } else {
+            for (int i = 0; i < groupBookings.size(); i++) {
+                core.GroupBooking groupBooking = groupBookings.get(i);
+                Flight flight = groupBooking.getFlight();
+                
+                System.out.println((userBookings.size() + i + 1) + ". Group ID: " + groupBooking.getGroupId() + 
+                                  " - Flight: " + flight.getFlightNumber() + 
+                                  " (" + flight.getDeparture() + " to " + flight.getArrival() + ")");
+            }
+        }
+        
+        if (userBookings.isEmpty() && groupBookings.isEmpty()) {
+            System.out.println(ConsoleColors.RED + "You don't have any bookings to cancel." + ConsoleColors.RESET);
             return;
         }
-        System.out.println(ConsoleColors.CYAN + "Select a booking to cancel:" + ConsoleColors.RESET);
-        for (int i = 0; i < currentPassenger.getBookings().size(); i++) {
-            System.out.println((i + 1) + ". " + currentPassenger.getBookings().get(i).getDescription());
-        }
-        System.out.println("Enter 'back' to return to main menu");
-        System.out.print("Enter booking number or flight number: ");
         
-        String input = scanner.nextLine();
-        if (input.equalsIgnoreCase("back")) {
+        System.out.println("\n1. Cancel Individual Booking");
+        System.out.println("2. Cancel Group Booking");
+        System.out.println("3. Go Back");
+        System.out.print("Choose an option: ");
+        int choice;
+        
+        try {
+            choice = Integer.parseInt(scanner.nextLine());
+        } catch (NumberFormatException e) {
+            System.out.println(ConsoleColors.RED + "Invalid input. Returning to main menu." + ConsoleColors.RESET);
+            return;
+        }
+        
+        if (choice == 1) {
+            if (userBookings.isEmpty()) {
+                System.out.println(ConsoleColors.RED + "You have no individual bookings to cancel." + ConsoleColors.RESET);
+                return;
+            }
+            
+            System.out.print("Enter the number of the booking to cancel: ");
+            int bookingIndex;
+            
+            try {
+                bookingIndex = Integer.parseInt(scanner.nextLine()) - 1;
+            } catch (NumberFormatException e) {
+                System.out.println(ConsoleColors.RED + "Invalid input. Returning to main menu." + ConsoleColors.RESET);
+                return;
+            }
+            
+            if (bookingIndex < 0 || bookingIndex >= userBookings.size()) {
+                System.out.println(ConsoleColors.RED + "Invalid booking number." + ConsoleColors.RESET);
+                return;
+            }
+            
+            Booking bookingToCancel = userBookings.get(bookingIndex);
+            System.out.println("You're about to cancel: " + bookingToCancel.getDescription());
+            System.out.println(ConsoleColors.RED + "This action cannot be undone." + ConsoleColors.RESET);
+            System.out.print("Type 'confirm' to proceed with cancellation: ");
+            String confirmation = scanner.nextLine();
+            
+            if (confirmation.equalsIgnoreCase("confirm")) {
+                // If the booking has a seat, release it
+                BookingComponent component = bookingToCancel.bookingComponent;
+                if (component instanceof ConcreteBooking) {
+                    ConcreteBooking concreteBooking = (ConcreteBooking) component;
+                    if (concreteBooking.getSeatCode() != null && !concreteBooking.getSeatCode().isEmpty()) {
+                        bookingToCancel.getFlight().getSeatMap().releaseSeat(concreteBooking.getSeatCode());
+                    }
+                }
+                
+                // Remove the booking from the passenger's list
+                currentPassenger.cancelBooking(bookingToCancel);
+                
+                System.out.println(ConsoleColors.GREEN + "Booking canceled successfully." + ConsoleColors.RESET);
+            } else {
+                System.out.println(ConsoleColors.YELLOW + "Cancellation aborted." + ConsoleColors.RESET);
+            }
+        } else if (choice == 2) {
+            if (groupBookings.isEmpty()) {
+                System.out.println(ConsoleColors.RED + "You have no group bookings to cancel." + ConsoleColors.RESET);
+                return;
+            }
+            
+            System.out.print("Enter the number of the group booking to cancel: ");
+            int groupIndex;
+            
+            try {
+                groupIndex = Integer.parseInt(scanner.nextLine()) - 1;
+            } catch (NumberFormatException e) {
+                System.out.println(ConsoleColors.RED + "Invalid input. Returning to main menu." + ConsoleColors.RESET);
+                return;
+            }
+            
+            if (groupIndex < 0 || groupIndex >= groupBookings.size()) {
+                System.out.println(ConsoleColors.RED + "Invalid group booking number." + ConsoleColors.RESET);
+                return;
+            }
+            
+            core.GroupBooking groupBookingToCancel = groupBookings.get(groupIndex);
+            System.out.println("You're about to cancel: " + groupBookingToCancel.getGroupId());
+            System.out.println(ConsoleColors.RED + "This action cannot be undone." + ConsoleColors.RESET);
+            System.out.print("Type 'confirm' to proceed with cancellation: ");
+            String groupConfirmation = scanner.nextLine();
+            
+            if (groupConfirmation.equalsIgnoreCase("confirm")) {
+                // Remove the group booking from the passenger's list
+                currentPassenger.cancelGroupBooking(groupBookingToCancel);
+                
+                System.out.println(ConsoleColors.GREEN + "Group booking canceled successfully." + ConsoleColors.RESET);
+            } else {
+                System.out.println(ConsoleColors.YELLOW + "Cancellation aborted." + ConsoleColors.RESET);
+            }
+        } else if (choice == 3) {
             System.out.println(ConsoleColors.YELLOW + "Returning to main menu." + ConsoleColors.RESET);
             return;
-        }
-        
-        Booking selectedBooking = null;
-        
-        // First try to parse as a numeric index
-        try {
-            int bookingIndex = Integer.parseInt(input) - 1;
-            if (bookingIndex >= 0 && bookingIndex < currentPassenger.getBookings().size()) {
-                selectedBooking = currentPassenger.getBookings().get(bookingIndex);
-            } else {
-                System.out.println(ConsoleColors.RED + "Invalid booking number. Please select a number between 1 and " + 
-                                  currentPassenger.getBookings().size() + "." + ConsoleColors.RESET);
-                return;
-            }
-        } catch (NumberFormatException e) {
-            // If not a number, try to match against flight numbers
-            for (Booking booking : currentPassenger.getBookings()) {
-                if (booking.getFlight().getFlightNumber().equalsIgnoreCase(input) || 
-                    booking.getDescription().toLowerCase().contains(input.toLowerCase())) {
-                    selectedBooking = booking;
-                    break;
-                }
-            }
-            
-            if (selectedBooking == null) {
-                System.out.println(ConsoleColors.RED + "No booking found matching '" + input + "'. Please enter a valid booking number or flight number." + ConsoleColors.RESET);
-                return;
-            }
-        }
-        
-        System.out.println(ConsoleColors.YELLOW + "Are you sure you want to cancel this booking? (y/n)" + ConsoleColors.RESET);
-        System.out.println(selectedBooking.getDescription() + " - Cost: $" + selectedBooking.getCost());
-        String confirm = scanner.nextLine().toLowerCase();
-        
-        if (confirm.equals("y")) {
-            currentPassenger.cancelBooking(selectedBooking);
-            System.out.println(ConsoleColors.GREEN + "Booking canceled successfully." + ConsoleColors.RESET);
-            
-            // Refund policy information
-            System.out.println(ConsoleColors.CYAN + "Refund Policy:" + ConsoleColors.RESET);
-            System.out.println("- 100% refund if canceled 7+ days before departure");
-            System.out.println("- 50% refund if canceled 3-6 days before departure");
-            System.out.println("- No refund if canceled less than 3 days before departure");
-            System.out.println(ConsoleColors.YELLOW + "Please allow 5-7 business days for the refund to be processed." + ConsoleColors.RESET);
         } else {
-            System.out.println(ConsoleColors.YELLOW + "Cancellation aborted." + ConsoleColors.RESET);
+            System.out.println(ConsoleColors.RED + "Invalid choice. Please select a number between 1 and 3." + ConsoleColors.RESET);
         }
     }
 
     private static void checkFlightStatus() {
-        System.out.print("Enter flight number to check status: ");
+        System.out.println(ConsoleColors.CYAN + "\n--- Check Flight Status ---" + ConsoleColors.RESET);
+        
+        System.out.print("Enter flight number: ");
         String flightNumber = scanner.nextLine();
         Flight flight = flightDb.getFlightByNumber(flightNumber);
+        
         if (flight == null) {
             System.out.println(ConsoleColors.RED + "Flight not found." + ConsoleColors.RESET);
-        } else {
-            System.out.println(flight);
-            
-            // Check if user is subscribed to this flight
-            boolean isSubscribed = false;
-            for (Booking booking : currentPassenger.getBookings()) {
-                if (booking.getFlight().getFlightNumber().equals(flightNumber)) {
-                    isSubscribed = true;
-                    break;
-                }
-            }
-            
-            if (!isSubscribed) {
-                System.out.println(ConsoleColors.YELLOW + "Would you like to subscribe to updates for this flight? (y/n)" + ConsoleColors.RESET);
-                String choice = scanner.nextLine().toLowerCase();
-                if (choice.equals("y")) {
-                    currentPassenger.subscribeToFlight(flight);
-                    System.out.println(ConsoleColors.GREEN + "You are now subscribed to updates for Flight " + flightNumber + ConsoleColors.RESET);
-                }
-            }
+            return;
         }
+        
+        System.out.println("Flight Status: " + getColoredStatus(flight.getStatus()));
     }
 
     private static void viewLoyaltyPoints() {
-        System.out.println(ConsoleColors.CYAN + "Your Loyalty Points: " + currentPassenger.getLoyaltyPoints() + ConsoleColors.RESET);
+        System.out.println(ConsoleColors.CYAN + "\n--- View Loyalty Points ---" + ConsoleColors.RESET);
         
-        // Show loyalty tiers and benefits
-        System.out.println(ConsoleColors.CYAN + "\nLoyalty Program Tiers:" + ConsoleColors.RESET);
-        System.out.println("- Bronze (0-100 points): No additional benefits");
-        System.out.println("- Silver (101-500 points): Free seat selection, 5% discount on future bookings");
-        System.out.println("- Gold (501-1000 points): Free seat selection, 10% discount, priority check-in");
-        System.out.println("- Platinum (1001+ points): Free seat selection, 15% discount, priority check-in, lounge access");
-        
-        // Determine current tier
-        int points = currentPassenger.getLoyaltyPoints();
-        String tier;
-        String benefits;
-        
-        if (points > 1000) {
-            tier = "Platinum";
-            benefits = "Free seat selection, 15% discount, priority check-in, lounge access";
-        } else if (points > 500) {
-            tier = "Gold";
-            benefits = "Free seat selection, 10% discount, priority check-in";
-        } else if (points > 100) {
-            tier = "Silver";
-            benefits = "Free seat selection, 5% discount on future bookings";
-        } else {
-            tier = "Bronze";
-            benefits = "No additional benefits";
-        }
-        
-        System.out.println(ConsoleColors.GREEN + "\nYour current tier: " + tier + ConsoleColors.RESET);
-        System.out.println("Your benefits: " + benefits);
-        
-        if (!tier.equals("Platinum")) {
-            int pointsToNextTier;
-            String nextTier;
-            
-            if (tier.equals("Bronze")) {
-                pointsToNextTier = 101 - points;
-                nextTier = "Silver";
-            } else if (tier.equals("Silver")) {
-                pointsToNextTier = 501 - points;
-                nextTier = "Gold";
-            } else { // Gold
-                pointsToNextTier = 1001 - points;
-                nextTier = "Platinum";
-            }
-            
-            System.out.println(ConsoleColors.YELLOW + "You need " + pointsToNextTier + 
-                               " more points to reach " + nextTier + " tier." + ConsoleColors.RESET);
-        }
+        System.out.println("Current Loyalty Points: " + currentPassenger.getLoyaltyPoints());
     }
 
     private static void selectChangeSeats() {
-        if (currentPassenger.getBookings().isEmpty()) {
-            System.out.println(ConsoleColors.YELLOW + "You have no bookings to change seats for." + ConsoleColors.RESET);
-            return;
-        }
+        System.out.println(ConsoleColors.CYAN + "\n--- Select/Change Seats ---" + ConsoleColors.RESET);
         
-        System.out.println(ConsoleColors.CYAN + "Select a booking to change seats:" + ConsoleColors.RESET);
-        for (int i = 0; i < currentPassenger.getBookings().size(); i++) {
-            Booking booking = currentPassenger.getBookings().get(i);
-            ConcreteBooking concreteBooking = null;
-            
-            // Get the concrete booking to access seat information
-            if (booking.bookingComponent instanceof ConcreteBooking) {
-                concreteBooking = (ConcreteBooking) booking.bookingComponent;
-            }
-            
-            String seatInfo = (concreteBooking != null) ? 
-                            " (Current seat: " + concreteBooking.getSeatCode() + ")" :
-                            " (Seat information not available)";
-                            
-            Flight flight = booking.getFlight();
-            String flightInfo = (flight != null) ? 
-                              " [Flight " + flight.getFlightNumber() + "]" :
-                              "";
-                              
-            System.out.println((i + 1) + ". " + booking.getDescription() + seatInfo + flightInfo);
-        }
+        System.out.println("1. Change seat for individual booking");
+        System.out.println("2. Change seat for group booking");
+        System.out.println("3. Go back");
+        System.out.print("Choose an option: ");
         
-        System.out.println(ConsoleColors.YELLOW + "Enter booking number, flight number, or '0' to cancel:" + ConsoleColors.RESET);
-        System.out.print("Your choice: ");
-        String input = scanner.nextLine().trim();
-        
-        if (input.equals("0")) {
-            System.out.println(ConsoleColors.YELLOW + "Returning to main menu." + ConsoleColors.RESET);
-            return;
-        }
-        
-        Booking selectedBooking = null;
-        
-        // First try to parse as a numeric index
+        int choice;
         try {
-            int bookingChoice = Integer.parseInt(input);
-            if (bookingChoice >= 1 && bookingChoice <= currentPassenger.getBookings().size()) {
-                selectedBooking = currentPassenger.getBookings().get(bookingChoice - 1);
-            } else {
-                System.out.println(ConsoleColors.RED + "Invalid booking number." + ConsoleColors.RESET);
-                return;
-            }
+            choice = Integer.parseInt(scanner.nextLine());
         } catch (NumberFormatException e) {
-            // If not a number, search by flight number
-            for (Booking booking : currentPassenger.getBookings()) {
-                if (booking.getFlight() != null && 
-                    booking.getFlight().getFlightNumber().equalsIgnoreCase(input)) {
-                    selectedBooking = booking;
-                    break;
-                }
-            }
-            
-            if (selectedBooking == null) {
-                System.out.println(ConsoleColors.RED + "No booking found for flight number: " + input + ConsoleColors.RESET);
-                return;
-            }
-        }
-        
-        if (!(selectedBooking.bookingComponent instanceof ConcreteBooking)) {
-            System.out.println(ConsoleColors.RED + "Cannot change seat for this booking type." + ConsoleColors.RESET);
+            System.out.println(ConsoleColors.RED + "Invalid input. Returning to main menu." + ConsoleColors.RESET);
             return;
         }
         
-        ConcreteBooking concreteBooking = (ConcreteBooking) selectedBooking.bookingComponent;
-        Flight flight = concreteBooking.getFlight();
+        switch (choice) {
+            case 1:
+                changeIndividualSeat();
+                break;
+            case 2:
+                changeGroupSeat();
+                break;
+            case 3:
+                return;
+            default:
+                System.out.println(ConsoleColors.RED + "Invalid choice. Please try again." + ConsoleColors.RESET);
+        }
+    }
+    
+    /**
+     * Change seat for an individual booking
+     */
+    private static void changeIndividualSeat() {
+        System.out.print("Enter flight number: ");
+        String flightNumber = scanner.nextLine();
+        Flight flight = flightDb.getFlightByNumber(flightNumber);
         
-        // Display current seat and flight information
-        System.out.println(ConsoleColors.CYAN + "Current booking information:" + ConsoleColors.RESET);
-        System.out.println("Flight: " + flight.getFlightNumber() + " from " + flight.getDeparture() + " to " + flight.getArrival());
-        System.out.println("Current seat: " + concreteBooking.getSeatCode());
+        if (flight == null) {
+            System.out.println(ConsoleColors.RED + "Flight not found." + ConsoleColors.RESET);
+            return;
+        }
+        
+        // Check if user has a booking for this flight
+        Booking userBooking = null;
+        for (Booking booking : currentPassenger.getBookings()) {
+            if (booking.getFlight().getFlightNumber().equals(flightNumber)) {
+                userBooking = booking;
+                break;
+            }
+        }
+        
+        if (userBooking == null) {
+            System.out.println(ConsoleColors.RED + "You don't have a booking for flight " + flightNumber + ConsoleColors.RESET);
+            return;
+        }
+        
+        // Get current seat assignment
+        String currentSeat = null;
+        if (userBooking.bookingComponent instanceof ConcreteBooking) {
+            currentSeat = ((ConcreteBooking) userBooking.bookingComponent).getSeatCode();
+            System.out.println(ConsoleColors.YELLOW + "Current seat assignment: " + currentSeat + ConsoleColors.RESET);
+        }
         
         // Use seat map visualizer to select a new seat
         SeatMapVisualizer seatVisualizer = new SeatMapVisualizer(flight.getSeatMap());
@@ -1109,13 +1163,360 @@ public class FlightBookingApp {
             return;
         }
         
-        // Try to change the seat
-        if (concreteBooking.changeSeat(newSeatCode)) {
-            // Update the booking component with new seat information
-            selectedBooking.setBookingComponent(concreteBooking);
-            System.out.println(ConsoleColors.GREEN + "Seat changed successfully to " + newSeatCode + "." + ConsoleColors.RESET);
-        } else {
-            System.out.println(ConsoleColors.RED + "Failed to change seat. The seat may be occupied or invalid." + ConsoleColors.RESET);
+        // Change the seat
+        boolean seatChanged = false;
+        if (userBooking.bookingComponent instanceof ConcreteBooking) {
+            seatChanged = ((ConcreteBooking) userBooking.bookingComponent).changeSeat(newSeatCode);
         }
+        
+        if (seatChanged) {
+            System.out.println(ConsoleColors.GREEN + "Seat changed successfully from " + currentSeat + " to " + newSeatCode + ConsoleColors.RESET);
+        } else {
+            System.out.println(ConsoleColors.RED + "Failed to change seat. The seat may already be occupied." + ConsoleColors.RESET);
+        }
+    }
+    
+    /**
+     * Change seat for a passenger in a group booking
+     */
+    private static void changeGroupSeat() {
+        data.GroupBookingDatabase groupDb = new data.GroupBookingDatabase();
+        List<core.GroupBooking> groupBookings = groupDb.getGroupBookingsForPassenger(currentPassenger);
+        
+        if (groupBookings.isEmpty()) {
+            System.out.println(ConsoleColors.RED + "You don't have any group bookings." + ConsoleColors.RESET);
+            return;
+        }
+        
+        // Display group bookings
+        System.out.println(ConsoleColors.CYAN + "Your group bookings:" + ConsoleColors.RESET);
+        for (int i = 0; i < groupBookings.size(); i++) {
+            core.GroupBooking groupBooking = groupBookings.get(i);
+            Flight flight = groupBooking.getFlight();
+            
+            System.out.println((i+1) + ". Group ID: " + groupBooking.getGroupId() + 
+                              " - Flight: " + flight.getFlightNumber() + 
+                              " (" + flight.getDeparture() + " to " + flight.getArrival() + ")");
+        }
+        
+        System.out.print("Select a group booking (1-" + groupBookings.size() + "): ");
+        int groupIndex;
+        try {
+            groupIndex = Integer.parseInt(scanner.nextLine()) - 1;
+        } catch (NumberFormatException e) {
+            System.out.println(ConsoleColors.RED + "Invalid input. Returning to main menu." + ConsoleColors.RESET);
+            return;
+        }
+        
+        if (groupIndex < 0 || groupIndex >= groupBookings.size()) {
+            System.out.println(ConsoleColors.RED + "Invalid selection." + ConsoleColors.RESET);
+            return;
+        }
+        
+        core.GroupBooking selectedGroupBooking = groupBookings.get(groupIndex);
+        Flight flight = selectedGroupBooking.getFlight();
+        
+        // Select the passenger to change seat for
+        List<Passenger> passengers = selectedGroupBooking.getPassengers();
+        System.out.println(ConsoleColors.CYAN + "Passengers in this booking:" + ConsoleColors.RESET);
+        
+        // Display current seat assignments
+        Map<Passenger, String> seatAssignments = selectedGroupBooking.getAllSeatAssignments();
+        for (int i = 0; i < passengers.size(); i++) {
+            Passenger passenger = passengers.get(i);
+            String seatCode = seatAssignments.get(passenger);
+            String seatInfo = seatCode != null ? seatCode : "Not assigned";
+            System.out.println((i+1) + ". " + passenger.name + " (Current seat: " + seatInfo + ")");
+        }
+        
+        System.out.print("Select a passenger (1-" + passengers.size() + "): ");
+        int passengerIndex;
+        try {
+            passengerIndex = Integer.parseInt(scanner.nextLine()) - 1;
+        } catch (NumberFormatException e) {
+            System.out.println(ConsoleColors.RED + "Invalid input. Returning to main menu." + ConsoleColors.RESET);
+            return;
+        }
+        
+        if (passengerIndex < 0 || passengerIndex >= passengers.size()) {
+            System.out.println(ConsoleColors.RED + "Invalid selection." + ConsoleColors.RESET);
+            return;
+        }
+        
+        Passenger selectedPassenger = passengers.get(passengerIndex);
+        String currentSeat = seatAssignments.get(selectedPassenger);
+        
+        // Use seat map visualizer to select a new seat
+        SeatMapVisualizer seatVisualizer = new SeatMapVisualizer(flight.getSeatMap());
+        System.out.println(ConsoleColors.CYAN + "Please select a new seat for " + selectedPassenger.name + ":" + ConsoleColors.RESET);
+        String newSeatCode = seatVisualizer.selectSeat(scanner);
+        
+        if (newSeatCode == null) {
+            System.out.println(ConsoleColors.YELLOW + "Seat change cancelled." + ConsoleColors.RESET);
+            return;
+        }
+        
+        // Change the seat
+        boolean seatChanged = selectedGroupBooking.assignSeat(selectedPassenger, newSeatCode);
+        
+        if (seatChanged) {
+            // Save the updated group booking
+            groupDb.updateGroupBooking(selectedGroupBooking);
+            
+            System.out.println(ConsoleColors.GREEN + "Seat changed successfully for " + selectedPassenger.name + 
+                               " from " + (currentSeat != null ? currentSeat : "not assigned") + 
+                               " to " + newSeatCode + ConsoleColors.RESET);
+        } else {
+            System.out.println(ConsoleColors.RED + "Failed to change seat. The seat may already be occupied." + ConsoleColors.RESET);
+        }
+    }
+
+    /**
+     * Creates a new group booking for multiple passengers.
+     */
+    private static void createGroupBooking() {
+        System.out.println(ConsoleColors.CYAN + "\n--- Create Group Booking ---" + ConsoleColors.RESET);
+        
+        // Initialize the database
+        data.GroupBookingDatabase groupDb = new data.GroupBookingDatabase();
+        
+        // Step 1: Search for a flight
+        System.out.println(ConsoleColors.YELLOW + "Step 1: Select a flight for the group" + ConsoleColors.RESET);
+        List<Flight> searchResults = searchFlightsForBooking();
+        
+        if (searchResults == null || searchResults.isEmpty()) {
+            System.out.println(ConsoleColors.RED + "No flights available for booking." + ConsoleColors.RESET);
+            return;
+        }
+        
+        // Display flights and let user select one
+        displayFlightsTable(searchResults);
+        
+        System.out.print("Enter the flight number you want to book (or 'back' to return): ");
+        String flightNumber = scanner.nextLine().toUpperCase();
+        
+        if (flightNumber.equalsIgnoreCase("back")) {
+            return;
+        }
+        
+        // Find the selected flight
+        Flight selectedFlight = null;
+        for (Flight flight : searchResults) {
+            if (flight.getFlightNumber().equalsIgnoreCase(flightNumber)) {
+                selectedFlight = flight;
+                break;
+            }
+        }
+        
+        if (selectedFlight == null) {
+            System.out.println(ConsoleColors.RED + "Invalid flight number. Please try again." + ConsoleColors.RESET);
+            return;
+        }
+        
+        // Step 2: Enter group details
+        System.out.println(ConsoleColors.YELLOW + "\nStep 2: Enter group details" + ConsoleColors.RESET);
+        
+        System.out.println("Selected flight: " + selectedFlight.getFlightNumber() + 
+                          " from " + selectedFlight.getDeparture() + 
+                          " to " + selectedFlight.getArrival() + 
+                          " on " + selectedFlight.getDepartureDate());
+        
+        // Contact information
+        System.out.print("Enter contact name: ");
+        String contactName = scanner.nextLine();
+        
+        System.out.print("Enter contact email: ");
+        String contactEmail = scanner.nextLine();
+        
+        System.out.print("Enter contact phone: ");
+        String contactPhone = scanner.nextLine();
+        
+        // Step 3: Add passengers to the group
+        System.out.println(ConsoleColors.YELLOW + "\nStep 3: Add passengers to the group" + ConsoleColors.RESET);
+        
+        List<Passenger> passengers = new ArrayList<>();
+        // Add the current user's passenger by default
+        passengers.add(currentPassenger);
+        System.out.println("Added: " + currentPassenger.name + " (You)");
+        
+        while (true) {
+            System.out.println("\nCurrent number of passengers: " + passengers.size());
+            System.out.println("1. Add another passenger");
+            System.out.println("2. Continue to seat selection");
+            System.out.print("Choose an option: ");
+            
+            int choice;
+            try {
+                choice = Integer.parseInt(scanner.nextLine());
+            } catch (NumberFormatException e) {
+                System.out.println(ConsoleColors.RED + "Invalid input. Please enter a number." + ConsoleColors.RESET);
+                continue;
+            }
+            
+            if (choice == 1) {
+                System.out.print("Enter passenger name: ");
+                String passengerName = scanner.nextLine();
+                
+                if (passengerName.isEmpty()) {
+                    System.out.println(ConsoleColors.RED + "Passenger name cannot be empty." + ConsoleColors.RESET);
+                    continue;
+                }
+                
+                Passenger newPassenger = new Passenger(passengerName);
+                passengers.add(newPassenger);
+                System.out.println(ConsoleColors.GREEN + "Added: " + passengerName + ConsoleColors.RESET);
+            } else if (choice == 2) {
+                if (passengers.size() < 2) {
+                    System.out.println(ConsoleColors.RED + "A group booking must have at least 2 passengers." + ConsoleColors.RESET);
+                    continue;
+                }
+                break;
+            } else {
+                System.out.println(ConsoleColors.RED + "Invalid choice. Please try again." + ConsoleColors.RESET);
+            }
+        }
+        
+        // Step 4: Create the group booking without seat assignments
+        String groupId = groupDb.generateGroupId();
+        core.GroupBooking groupBooking = new core.GroupBooking(
+            groupId, selectedFlight, passengers, 0.0, // Start with 0% discount, will update later
+            contactName, contactEmail, contactPhone
+        );
+        
+        // Step 5: Seat selection for each passenger
+        System.out.println(ConsoleColors.YELLOW + "\nStep 5: Select seats for each passenger" + ConsoleColors.RESET);
+        
+        SeatMapVisualizer seatVisualizer = new SeatMapVisualizer(selectedFlight.getSeatMap());
+        
+        for (Passenger passenger : passengers) {
+            System.out.println(ConsoleColors.CYAN + "\nSelecting seat for: " + passenger.name + ConsoleColors.RESET);
+            
+            // Display seat map and let the user select a seat
+            String seatCode = seatVisualizer.selectSeat(scanner);
+            
+            if (seatCode == null) {
+                System.out.println(ConsoleColors.RED + "Seat selection cancelled. Group booking aborted." + ConsoleColors.RESET);
+                return;
+            }
+            
+            // Assign the selected seat to the passenger
+            if (!groupBooking.assignSeat(passenger, seatCode)) {
+                System.out.println(ConsoleColors.RED + "Error assigning seat " + seatCode + " to " + passenger.name + ". Please try again." + ConsoleColors.RESET);
+                return;
+            }
+            
+            System.out.println(ConsoleColors.GREEN + "Seat " + seatCode + " assigned to " + passenger.name + ConsoleColors.RESET);
+        }
+        
+        // Step 6: Calculate price and apply group discount
+        System.out.println(ConsoleColors.YELLOW + "\nStep 6: Group Discount" + ConsoleColors.RESET);
+        
+        // Calculate discount based on group size
+        double discountPercentage = calculateGroupDiscount(passengers.size());
+        
+        // Update the discount in the group booking
+        groupBooking.setGroupDiscountPercentage(discountPercentage);
+        
+        double originalPrice = selectedFlight.getPrice() * passengers.size();
+        double discountedPrice = groupBooking.getTotalCost();
+        
+        System.out.println("Group size: " + passengers.size() + " passengers");
+        System.out.println("Original total price: $" + String.format("%.2f", originalPrice));
+        System.out.println("Group discount: " + discountPercentage + "%");
+        System.out.println("Final price: $" + String.format("%.2f", discountedPrice));
+        
+        // Step 7: Confirm and process payment
+        System.out.println(ConsoleColors.YELLOW + "\nStep 7: Confirm Booking" + ConsoleColors.RESET);
+        System.out.println("1. Proceed to payment");
+        System.out.println("2. Cancel");
+        System.out.print("Choose an option: ");
+        
+        int confirmChoice;
+        try {
+            confirmChoice = Integer.parseInt(scanner.nextLine());
+        } catch (NumberFormatException e) {
+            System.out.println(ConsoleColors.RED + "Invalid input. Booking cancelled." + ConsoleColors.RESET);
+            return;
+        }
+        
+        if (confirmChoice != 1) {
+            System.out.println(ConsoleColors.YELLOW + "Booking cancelled." + ConsoleColors.RESET);
+            return;
+        }
+        
+        // Process payment
+        if (!paymentProcessor.processPayment(discountedPrice, "Group booking for " + passengers.size() + " passengers to " + selectedFlight.getArrival())) {
+            System.out.println(ConsoleColors.RED + "Payment failed. Group booking cancelled." + ConsoleColors.RESET);
+            return;
+        }
+        
+        // Step 8: Save the group booking
+        if (groupDb.addGroupBooking(groupBooking)) {
+            System.out.println(ConsoleColors.GREEN + "\nGroup booking created successfully!" + ConsoleColors.RESET);
+            System.out.println("Group ID: " + groupId);
+            System.out.println("Flight: " + selectedFlight.getFlightNumber() + 
+                              " from " + selectedFlight.getDeparture() + 
+                              " to " + selectedFlight.getArrival());
+            System.out.println("Date: " + selectedFlight.getDepartureDate());
+            System.out.println("Passengers: " + passengers.size());
+            System.out.println("Contact: " + contactName);
+            System.out.println("Total paid: $" + String.format("%.2f", discountedPrice));
+        } else {
+            System.out.println(ConsoleColors.RED + "Error creating group booking. Please try again." + ConsoleColors.RESET);
+        }
+    }
+
+    /**
+     * Calculate group discount percentage based on group size.
+     * 
+     * @param groupSize Number of passengers in the group
+     * @return Discount percentage
+     */
+    private static double calculateGroupDiscount(int groupSize) {
+        if (groupSize >= 10) {
+            return 15.0; // 15% discount for 10+ passengers
+        } else if (groupSize >= 5) {
+            return 10.0; // 10% discount for 5-9 passengers
+        } else if (groupSize >= 3) {
+            return 5.0;  // 5% discount for 3-4 passengers
+        } else {
+            return 2.0;  // 2% discount for 2 passengers
+        }
+    }
+
+    /**
+     * Searches for flights for booking purposes.
+     * 
+     * @return List of flights matching the search criteria
+     */
+    private static List<Flight> searchFlightsForBooking() {
+        List<String> departures = flightDb.getAvailableDepartures();
+        if (departures.isEmpty()) {
+            System.out.println(ConsoleColors.YELLOW + "No departure cities found in the database." + ConsoleColors.RESET);
+            return null;
+        }
+        
+        displayStringList(departures, "Available Departure Cities");
+        System.out.print("Enter departure city code: ");
+        String selectedDeparture = scanner.nextLine().toUpperCase();
+        
+        List<String> arrivals = flightDb.getAvailableArrivalsFrom(selectedDeparture);
+        if (arrivals.isEmpty()) {
+            System.out.println(ConsoleColors.YELLOW + "No arrival cities found for the selected departure." + ConsoleColors.RESET);
+            return null;
+        }
+        
+        displayStringList(arrivals, "Available Arrival Cities");
+        System.out.print("Enter arrival city code: ");
+        String selectedArrival = scanner.nextLine().toUpperCase();
+        
+        List<Flight> results = flightDb.searchFlights(selectedDeparture, selectedArrival);
+        if (results.isEmpty()) {
+            System.out.println(ConsoleColors.YELLOW + "No flights found between " + selectedDeparture + 
+                              " and " + selectedArrival + "." + ConsoleColors.RESET);
+            return null;
+        }
+        
+        return results;
     }
 }

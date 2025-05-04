@@ -159,6 +159,30 @@ public class SeatMap implements Serializable {
     }
     
     /**
+     * Checks if a seat is available (not occupied).
+     * @param seatCode The seat to check
+     * @return true if the seat is available, false if it's occupied
+     */
+    public boolean isSeatAvailable(String seatCode) {
+        return !isSeatOccupied(seatCode);
+    }
+    
+    /**
+     * Changes the seat assignment.
+     * @param seatCode The new seat to assign
+     * @return true if seat change was successful, false otherwise
+     */
+    public boolean changeSeat(String seatCode) {
+        // First check if the seat is available
+        if (!isSeatAvailable(seatCode)) {
+            return false;
+        }
+        
+        // Book the new seat
+        return bookSeat(seatCode);
+    }
+    
+    /**
      * Gets all occupied seats.
      * @return Map of occupied seats
      */
@@ -188,5 +212,26 @@ public class SeatMap implements Serializable {
      */
     public String getFlightNumber() {
         return flightNumber;
+    }
+    
+    /**
+     * Finds the next available seat in the aircraft.
+     * Searches row by row starting from the front.
+     * 
+     * @return The seat code of the next available seat, or null if the flight is full
+     */
+    public String getNextAvailableSeat() {
+        // Look for an available seat row by row
+        for (int row = 1; row <= rows; row++) {
+            for (int col = 0; col < columns; col++) {
+                String seatCode = getSeatCode(row, col);
+                if (!isSeatOccupied(seatCode)) {
+                    return seatCode;
+                }
+            }
+        }
+        
+        // If no seat is available, return null (flight is full)
+        return null;
     }
 } 

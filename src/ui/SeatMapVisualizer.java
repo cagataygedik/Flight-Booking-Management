@@ -2,114 +2,110 @@ package ui;
 
 import core.SeatMap;
 import java.util.Scanner;
+import java.util.Map;
 
 /**
- * Provides a console-based visualization of the aircraft seat map.
+ * Provides a visual representation of the seat map and allows interactive selection of seats.
  */
 public class SeatMapVisualizer {
-    private final SeatMap seatMap;
+    private SeatMap seatMap;
     
+    /**
+     * Creates a new seat map visualizer.
+     * @param seatMap The seat map to visualize
+     */
     public SeatMapVisualizer(SeatMap seatMap) {
         this.seatMap = seatMap;
     }
     
     /**
-     * Displays the seat map in the console with color coding.
-     * - Green: Available seat
-     * - Red: Occupied seat
+     * Displays the seat map visually and allows the user to select a seat.
+     * @param scanner Scanner for user input
+     * @return The selected seat code or null if selection was cancelled
      */
-    public void displaySeatMap() {
-        System.out.println(ConsoleColors.CYAN + "\n=== Seat Map for Flight " + seatMap.getFlightNumber() + " ===" + ConsoleColors.RESET);
+    public String selectSeat(Scanner scanner) {
+        // Display the seat map
+        displaySeatMap();
         
-        // Print column headers
-        System.out.print("    ");
-        for (int col = 0; col < seatMap.getColumns(); col++) {
-            if (col == 3) {
-                // Skip the aisle in column headers
-                System.out.print("  ");
-            }
-            System.out.print(" " + (char)('A' + (col <= 2 ? col : col + 1)) + " ");
-        }
-        System.out.println();
+        // Prompt the user to select a seat
+        System.out.println(ConsoleColors.CYAN + "Enter seat code (e.g., 15B) or 'cancel' to go back:" + ConsoleColors.RESET);
+        String seatCode = scanner.nextLine().toUpperCase();
         
-        // Print rows
-        for (int row = 1; row <= seatMap.getRows(); row++) {
-            // Row number
-            System.out.printf("%2d  ", row);
-            
-            // Seats in this row
-            for (int col = 0; col < seatMap.getColumns(); col++) {
-                String seatCode = seatMap.getSeatCode(row, col);
-                
-                // Add space for aisle after column C
-                if (col == 3) {
-                    System.out.print("| ");
-                }
-                
-                // Color code: red for occupied, green for available
-                if (seatMap.isSeatOccupied(seatCode)) {
-                    System.out.print(ConsoleColors.RED + "[X]" + ConsoleColors.RESET);
-                } else {
-                    System.out.print(ConsoleColors.GREEN + "[ ]" + ConsoleColors.RESET);
-                }
-            }
-            System.out.println();
-            
-            // Add separator every 5 rows
-            if (row % 5 == 0 && row < seatMap.getRows()) {
-                System.out.println("    " + "-".repeat(3 * seatMap.getColumns() + 2));
-            }
+        if (seatCode.equalsIgnoreCase("cancel")) {
+            return null;
         }
         
-        System.out.println("\nLegend:");
-        System.out.println(ConsoleColors.GREEN + "[ ]" + ConsoleColors.RESET + " Available");
-        System.out.println(ConsoleColors.RED + "[X]" + ConsoleColors.RESET + " Occupied");
+        // Validate the seat code
+        try {
+            int[] seatPosition = seatMap.parseSeatCode(seatCode);
+            int row = seatPosition[0];
+            int column = seatPosition[1];
+            
+            if (row < 1 || row > seatMap.getRows() || column < 0 || column >= seatMap.getColumns()) {
+                System.out.println(ConsoleColors.RED + "Invalid seat code. Please try again." + ConsoleColors.RESET);
+                return selectSeat(scanner);
+            }
+            
+            // Check if the seat is occupied
+            if (seatMap.isSeatOccupied(seatCode)) {
+                System.out.println(ConsoleColors.RED + "This seat is already occupied. Please select another seat." + ConsoleColors.RESET);
+                return selectSeat(scanner);
+            }
+            
+            return seatCode;
+        } catch (Exception e) {
+            System.out.println(ConsoleColors.RED + "Invalid seat code format. Please enter a valid seat code (e.g., 15B)." + ConsoleColors.RESET);
+            return selectSeat(scanner);
+        }
     }
     
     /**
-     * Interactive seat selection process.
-     * @param scanner Scanner for user input
-     * @return Selected seat code or null if cancelled
+     * Displays a visual representation of the seat map.
      */
-    public String selectSeat(Scanner scanner) {
-        while (true) {
-            displaySeatMap();
-            
-            System.out.println("\nEnter seat code (e.g., 15B) or 'exit' to cancel:");
-            String input = scanner.nextLine().trim().toUpperCase();
-            
-            if (input.equalsIgnoreCase("exit")) {
-                return null;
+    private void displaySeatMap() {
+        Map<String, Boolean> occupiedSeats = seatMap.getOccupiedSeats();
+        
+        System.out.println(ConsoleColors.CYAN + "\n--- Seat Map for Flight " + seatMap.getFlightNumber() + " ---" + ConsoleColors.RESET);
+        System.out.println("      A   B   C       D   E   F");
+        System.out.println("    +---+---+---+   +---+---+---+");
+        
+        for (int row = 1; row <= seatMap.getRows(); row++) {
+            // Format row number with proper alignment
+            String rowStr = Integer.toString(row);
+            if (rowStr.length() == 1) {
+                System.out.print(" ");
             }
+            System.out.print(rowStr + " | ");
             
-            try {
-                // Validate seat format
-                int[] rowCol = seatMap.parseSeatCode(input);
-                int row = rowCol[0];
-                int col = rowCol[1];
+            // Print seats for each row
+            for (int col = 0; col < seatMap.getColumns(); col++) {
+                String seatCode = seatMap.getSeatCode(row, col);
                 
-                // Check if row and column are in valid range
-                if (row < 1 || row > seatMap.getRows() || col < 0 || col >= seatMap.getColumns()) {
-                    System.out.println(ConsoleColors.RED + "Invalid seat. Please choose a seat within the aircraft." + ConsoleColors.RESET);
-                    continue;
+                // Add aisle separator after 3rd seat
+                if (col == 3) {
+                    System.out.print("  | ");
                 }
                 
-                // Check if seat is already occupied
-                if (seatMap.isSeatOccupied(input)) {
-                    System.out.println(ConsoleColors.RED + "Seat " + input + " is already occupied. Please choose another seat." + ConsoleColors.RESET);
-                    continue;
+                // Skip the aisle column
+                if (col != 3) {
+                    if (occupiedSeats.containsKey(seatCode)) {
+                        // Occupied seat
+                        System.out.print(ConsoleColors.RED + "X" + ConsoleColors.RESET + " | ");
+                    } else {
+                        // Available seat
+                        System.out.print(ConsoleColors.GREEN + "O" + ConsoleColors.RESET + " | ");
+                    }
                 }
-                
-                // Confirm seat selection
-                System.out.println(ConsoleColors.YELLOW + "You've selected seat " + input + ". Confirm? (y/n)" + ConsoleColors.RESET);
-                String confirm = scanner.nextLine().trim().toLowerCase();
-                
-                if (confirm.equals("y") || confirm.equals("yes")) {
-                    return input;
-                }
-            } catch (Exception e) {
-                System.out.println(ConsoleColors.RED + "Invalid seat format. Please use format like '15B'." + ConsoleColors.RESET);
+            }
+            System.out.println("\n    +---+---+---+   +---+---+---+");
+            
+            // Add a separator every 10 rows for better readability
+            if (row % 10 == 0 && row < seatMap.getRows()) {
+                System.out.println();
             }
         }
+        
+        System.out.println("\nLegend: " + ConsoleColors.GREEN + "O" + ConsoleColors.RESET + " = Available, " + 
+                          ConsoleColors.RED + "X" + ConsoleColors.RESET + " = Occupied\n");
     }
 } 

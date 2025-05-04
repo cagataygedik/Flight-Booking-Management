@@ -1,6 +1,8 @@
 package core;
 
-public interface BookingComponent {
+import java.io.Serializable;
+
+public interface BookingComponent extends Serializable {
     double getCost();
     String getDescription();
     Flight getFlight();

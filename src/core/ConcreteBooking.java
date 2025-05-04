@@ -1,6 +1,9 @@
 package core;
 
-public class ConcreteBooking implements BookingComponent {
+import java.io.Serializable;
+
+public class ConcreteBooking implements BookingComponent, Serializable {
+    private static final long serialVersionUID = 1L;
     private Flight flight;
     private String passengerName;
     private String seatCode;

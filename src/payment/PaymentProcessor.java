@@ -5,8 +5,6 @@ import java.time.format.DateTimeParseException;
 import java.util.Random;
 import java.util.Scanner;
 
-
-
 import core.Booking;
 import ui.ConsoleColors;
 
@@ -17,6 +15,12 @@ public class PaymentProcessor {
         this.scanner = scanner;
     }
     
+    /**
+     * Process payment for a standard booking
+     * @param amount Amount to pay
+     * @param booking Booking object
+     * @return true if payment was successful
+     */
     public boolean processPayment(double amount, Booking booking) {
         System.out.println(ConsoleColors.CYAN + "\n--- Payment Processing ---" + ConsoleColors.RESET);
         System.out.println("Total amount to pay: $" + String.format("%.2f", amount));
@@ -79,7 +83,88 @@ public class PaymentProcessor {
             String receiptNumber = generateReceiptNumber();
             System.out.println(ConsoleColors.GREEN + "Payment successful!" + ConsoleColors.RESET);
             System.out.println("Receipt number: " + receiptNumber);
-            System.out.println("Booking confirmed for: " + booking.getDescription());
+            if (booking != null) {
+                System.out.println("Booking confirmed for: " + booking.getDescription());
+            }
+            System.out.println("Thank you for your purchase!");
+            return true;
+        } else {
+            System.out.println(ConsoleColors.RED + "Payment failed. Please try again." + ConsoleColors.RESET);
+            return false;
+        }
+    }
+    
+    /**
+     * Process payment for a group booking
+     * @param amount Amount to pay
+     * @param description Description of what the payment is for
+     * @return true if payment was successful
+     */
+    public boolean processPayment(double amount, String description) {
+        System.out.println(ConsoleColors.CYAN + "\n--- Payment Processing ---" + ConsoleColors.RESET);
+        System.out.println("Total amount to pay: $" + String.format("%.2f", amount));
+        
+        // Payment method selection
+        System.out.println("\nSelect payment method:");
+        System.out.println("1. Credit Card");
+        System.out.println("2. PayPal");
+        System.out.println("3. Bank Transfer");
+        System.out.print("Choose an option: ");
+        
+        int paymentMethodChoice;
+        try {
+            paymentMethodChoice = scanner.nextInt();
+            scanner.nextLine(); // Consume newline
+        } catch (Exception e) {
+            System.out.println(ConsoleColors.RED + "Invalid input. Defaulting to Credit Card." + ConsoleColors.RESET);
+            scanner.nextLine(); // Consume invalid input
+            paymentMethodChoice = 1;
+        }
+        
+        String paymentMethod;
+        switch (paymentMethodChoice) {
+            case 2: paymentMethod = "PayPal"; break;
+            case 3: paymentMethod = "Bank Transfer"; break;
+            default: paymentMethod = "Credit Card";
+        }
+        
+        System.out.println("Selected payment method: " + paymentMethod);
+        
+        // For credit card, collect details
+        if (paymentMethod.equals("Credit Card")) {
+            if (!collectCreditCardDetails()) {
+                return false;
+            }
+        } else if (paymentMethod.equals("PayPal")) {
+            if (!collectPayPalDetails()) {
+                return false;
+            }
+        } else { // Bank Transfer
+            if (!collectBankDetails()) {
+                return false;
+            }
+        }
+        
+        // Process payment
+        System.out.println(ConsoleColors.YELLOW + "Processing payment..." + ConsoleColors.RESET);
+        
+        // Simulate payment processing delay
+        try {
+            Thread.sleep(1500);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        
+        // Generate a random success (90% chance of success)
+        boolean success = new Random().nextInt(100) < 90;
+        
+        if (success) {
+            String receiptNumber = generateReceiptNumber();
+            System.out.println(ConsoleColors.GREEN + "Payment successful!" + ConsoleColors.RESET);
+            System.out.println("Receipt number: " + receiptNumber);
+            if (description != null) {
+                System.out.println("Payment for: " + description);
+            }
             System.out.println("Thank you for your purchase!");
             return true;
         } else {

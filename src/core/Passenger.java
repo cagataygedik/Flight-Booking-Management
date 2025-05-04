@@ -50,6 +50,24 @@ public class Passenger implements Observer, Serializable {
         unsubscribeFromFlight(booking.getFlight());
     }
 
+    /**
+     * Cancels a passenger's participation in a group booking.
+     * 
+     * @param groupBooking The group booking to cancel from
+     * @return true if passenger was removed from the group booking successfully
+     */
+    public boolean cancelGroupBooking(GroupBooking groupBooking) {
+        // Remove the passenger from the group booking
+        boolean removed = groupBooking.removePassenger(this);
+        
+        // Unsubscribe from the flight
+        if (removed) {
+            unsubscribeFromFlight(groupBooking.getFlight());
+        }
+        
+        return removed;
+    }
+
     public List<Booking> getBookings() {
         return bookings;
     }
@@ -61,5 +79,19 @@ public class Passenger implements Observer, Serializable {
     @Override
     public void update(String message) {
         System.out.println(ConsoleColors.GREEN + name + " received update: " + message + ConsoleColors.RESET);
+    }
+    
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        
+        Passenger other = (Passenger) obj;
+        return name.equals(other.name);
+    }
+    
+    @Override
+    public int hashCode() {
+        return name.hashCode();
     }
 }
